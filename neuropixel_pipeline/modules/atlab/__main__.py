@@ -26,6 +26,7 @@ from ...schemata import probe, ephys
 # Related to how to use the pipeline, not fully used yet
 # TODO: For non-minion mode all populates should be restricted to
 #       just the keys related to the current scan_key, otherwise no populate restriction is used
+# TODO: Will try to switch to algebraic data types for the different pipeline modes
 class PipelineMode(str, Enum):
     MINION = "minion"
     NO_CURATION = "no curation"
@@ -194,4 +195,5 @@ def main(args: AtlabParams):
 if __name__ == "__main__":
     ### TODO: Should have a minion mode that checks for any scans to push through the pipeline.
     ###     Will use the --mode=minion flag.
+    ###     Also check for base_dir is none and try to figure it out? Or not.
     main()
