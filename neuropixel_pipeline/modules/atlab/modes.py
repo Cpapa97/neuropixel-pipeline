@@ -213,7 +213,7 @@ class PipelineInput(BaseModel, Runnable):
         start_time = time.time()
 
         results = self.params.run(
-            restriction=self.restriction,  # How much of this can even be directly passed in?
+            # restriction=self.restriction,  # How much of this can even be directly passed in?
             **self.populate_kwargs,
         )
 
