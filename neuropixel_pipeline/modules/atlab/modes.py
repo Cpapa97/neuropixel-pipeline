@@ -5,7 +5,7 @@ import logging
 
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import Union, Literal, Optional
+from typing import Union, Literal, Optional, Any
 from pathlib import Path
 
 from .common import ScanKey
@@ -55,7 +55,7 @@ class Minion(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.MINION] = PipelineMode.MINION
     base_dir: Path
 
-    def run(self):
+    def run(self, **populate_kwargs):
         pass
 
 
@@ -74,7 +74,7 @@ class NoCuration(BaseModel, Runnable):
     clustering_output_dir: Optional[Path] = None
     curation_input: clustering.CurationInput = clustering.CurationInput()
 
-    def run(self):
+    def run(self, **populate_kwargs):
         """Preclustering and Clustering"""
         ### PreClustering
         logging.info("starting preclustering section")
@@ -110,9 +110,9 @@ class NoCuration(BaseModel, Runnable):
             ),
             skip_duplicates=True,
         )
-        ephys.EphysRecording.populate()
+        ephys.EphysRecording.populate(**populate_kwargs)
 
-        # ephys.LFP.populate()  # This isn't implemented yet
+        # ephys.LFP.populate(**populate_kwargs)  # This isn't implemented yet
 
         logging.info("done with preclustering section")
 
@@ -161,7 +161,7 @@ class NoCuration(BaseModel, Runnable):
             logging.info("attempting to trigger kilosort clustering")
             task_runner.trigger_clustering(check_for_existing_results=True)
             logging.info("one with kilosort clustering")
-        ephys.Clustering.populate()
+        ephys.Clustering.populate(**populate_kwargs)
 
 
 class Curated(BaseModel, Runnable):
@@ -170,7 +170,7 @@ class Curated(BaseModel, Runnable):
     base_dir: Path
     curation_input: clustering.CurationInput
 
-    def run(self):
+    def run(self, **populate_kwargs):
         """Ingesting curated results"""
         ### Curation Ingestion
         clustering_source_key = ephys.ClusteringTask.build_key_from_scan(
@@ -186,25 +186,36 @@ class Curated(BaseModel, Runnable):
                 **self.curation_input.model_dump(),
             ),
         )
-        ephys.CuratedClustering.populate()
+        ephys.CuratedClustering.populate(**populate_kwargs)
 
         logging.info("done with clustering section")
 
         logging.info("starting post-clustering section")
-        ephys.QualityMetrics.populate()
+        ephys.QualityMetrics.populate(**populate_kwargs)
         logging.info("done with post-clustering section")
 
 
+# TODO: Ideally, or almost necessarily, the populates need to be passed restrictions.
 class PipelineInput(BaseModel, Runnable):
     params: Union[Setup, Minion, NoCuration, Curated] = Field(
         discriminator="pipeline_mode"
     )
+    restriction: Optional[
+        Any
+    ] = None  # TODO: pass these through to the run methods + populates
+    populate_kwargs: dict = {
+        "reserve_jobs": True,
+        "suppress_errors": True,
+    }
 
     def run(self):
         logging.info("starting neuropixel pipeline")
         start_time = time.time()
 
-        results = self.params.run()
+        results = self.params.run(
+            restriction=self.restriction,  # How much of this can even be directly passed in?
+            **self.populate_kwargs,
+        )
 
         elapsed_time = round(time.time() - start_time, 2)
         logging.info(f"done with neuropixel pipeline, elapsed_time: {elapsed_time}")
