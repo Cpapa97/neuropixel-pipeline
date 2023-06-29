@@ -1,5 +1,7 @@
 # flake8: noqa
 
+from __future__ import annotations
+
 import datajoint as dj
 import numpy as np
 
@@ -39,11 +41,7 @@ class Session(dj.Manual):
         if not cls & session_meta:
             # Synthesize session id, auto_increment cannot be used here if it's used later
             # Additionally this does make it more difficult to accidentally add two of the same session
-            session_id = (
-                dj.U()
-                .aggr(cls & session_meta, n="ifnull(max(session_id)+1,1)")
-                .fetch1("n")
-            )
+            session_id = dj.U().aggr(cls, n="ifnull(max(session_id)+1,1)").fetch1("n")
             session_meta["session_id"] = session_id
             cls.insert1(
                 session_meta
