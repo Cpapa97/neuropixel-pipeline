@@ -73,6 +73,7 @@ class NoCuration(BaseModel, Runnable):
     )
     clustering_output_dir: Optional[Path] = None
     curation_input: clustering.CurationInput = clustering.CurationInput()
+    check_for_existing_kilosort_results: bool = True
 
     def run(self, **populate_kwargs):
         """Preclustering and Clustering"""
@@ -159,7 +160,7 @@ class NoCuration(BaseModel, Runnable):
                 clustering_params=clustering_params,
             )
             logging.info("attempting to trigger kilosort clustering")
-            task_runner.trigger_clustering(check_for_existing_results=True)
+            task_runner.trigger_clustering(self.check_for_existing_kilosort_results)
             logging.info("one with kilosort clustering")
         ephys.Clustering.populate(**populate_kwargs)
 
