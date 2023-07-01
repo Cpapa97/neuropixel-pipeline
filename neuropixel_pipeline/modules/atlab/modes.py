@@ -1,4 +1,5 @@
 from __future__ import annotations
+import abc
 import time
 import logging
 
@@ -23,6 +24,13 @@ from ...readers.labview import LabviewNeuropixelMeta
 from ...utils import check_for_first_bin_with_prefix
 from ...schemata import probe, ephys
 
+
+class Runnable(abc.ABC):
+    @abc.abstractmethod
+    def run(self):
+        pass
+
+
 class PipelineMode(str, Enum):
     SETUP = "setup"
     MINION = "minion"
@@ -30,7 +38,7 @@ class PipelineMode(str, Enum):
     CURATED = "curated"
 
 
-class Setup(BaseModel):
+class Setup(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.SETUP] = PipelineMode.SETUP
     setup: bool = True
 
@@ -43,7 +51,7 @@ class Setup(BaseModel):
         logging.info("done with setup section")
 
 
-class Minion(BaseModel):
+class Minion(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.MINION] = PipelineMode.MINION
     base_dir: Path
 
@@ -51,7 +59,7 @@ class Minion(BaseModel):
         pass
 
 
-class NoCuration(BaseModel):
+class NoCuration(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.NO_CURATION] = PipelineMode.NO_CURATION
     scan_key: ScanKey
     base_dir: Path
@@ -157,7 +165,7 @@ class NoCuration(BaseModel):
         ephys.Clustering.populate(**populate_kwargs)
 
 
-class Curated(BaseModel):
+class Curated(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.CURATED] = PipelineMode.CURATED
     scan_key: ScanKey
     base_dir: Path
