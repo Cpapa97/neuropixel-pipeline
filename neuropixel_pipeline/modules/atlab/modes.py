@@ -164,6 +164,28 @@ class NoCuration(BaseModel, Runnable):
             logging.info("done with kilosort clustering")
         ephys.Clustering.populate(**populate_kwargs)
 
+        ### Curation Ingestion
+        clustering_source_key = ephys.ClusteringTask.build_key_from_scan(
+            self.scan_key.model_dump(), self.insertion_number, self.clustering_method
+        )
+        if self.curation_input.curation_output_dir is None:
+            self.curation_input.curation_output_dir = (
+                ephys.ClusteringTask() & clustering_source_key
+            ).fetch1("clustering_output_dir")
+        ephys.Curation.create1_from_clustering_task(
+            dict(
+                **clustering_source_key,
+                **self.curation_input.model_dump(),
+            ),
+        )
+        ephys.CuratedClustering.populate(**populate_kwargs)
+
+        logging.info("done with clustering section")
+
+        logging.info("starting post-clustering section")
+        ephys.QualityMetrics.populate(**populate_kwargs)
+        logging.info("done with post-clustering section")
+
 
 class Curated(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.CURATED] = PipelineMode.CURATED
