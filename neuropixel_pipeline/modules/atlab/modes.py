@@ -1,5 +1,4 @@
 from __future__ import annotations
-import abc
 import time
 import logging
 
@@ -24,13 +23,6 @@ from ...readers.labview import LabviewNeuropixelMeta
 from ...utils import check_for_first_bin_with_prefix
 from ...schemata import probe, ephys
 
-
-class Runnable(abc.ABC):
-    @abc.abstractmethod
-    def run(self):
-        pass
-
-
 class PipelineMode(str, Enum):
     SETUP = "setup"
     MINION = "minion"
@@ -38,7 +30,7 @@ class PipelineMode(str, Enum):
     CURATED = "curated"
 
 
-class Setup(BaseModel, Runnable):
+class Setup(BaseModel):
     pipeline_mode: Literal[PipelineMode.SETUP] = PipelineMode.SETUP
     setup: bool = True
 
@@ -51,7 +43,7 @@ class Setup(BaseModel, Runnable):
         logging.info("done with setup section")
 
 
-class Minion(BaseModel, Runnable):
+class Minion(BaseModel):
     pipeline_mode: Literal[PipelineMode.MINION] = PipelineMode.MINION
     base_dir: Path
 
@@ -59,7 +51,7 @@ class Minion(BaseModel, Runnable):
         pass
 
 
-class NoCuration(BaseModel, Runnable):
+class NoCuration(BaseModel):
     pipeline_mode: Literal[PipelineMode.NO_CURATION] = PipelineMode.NO_CURATION
     scan_key: ScanKey
     base_dir: Path
@@ -165,7 +157,7 @@ class NoCuration(BaseModel, Runnable):
         ephys.Clustering.populate(**populate_kwargs)
 
 
-class Curated(BaseModel, Runnable):
+class Curated(BaseModel):
     pipeline_mode: Literal[PipelineMode.CURATED] = PipelineMode.CURATED
     scan_key: ScanKey
     base_dir: Path
@@ -197,7 +189,7 @@ class Curated(BaseModel, Runnable):
 
 
 # TODO: Ideally, or almost necessarily, the populates need to be passed restrictions.
-class PipelineInput(BaseModel, Runnable):
+class PipelineInput(BaseModel):
     params: Union[Setup, Minion, NoCuration, Curated] = Field(
         discriminator="pipeline_mode"
     )
