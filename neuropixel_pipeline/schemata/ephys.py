@@ -25,12 +25,12 @@ schema = dj.schema("neuropixel_ephys")
 # class IngestionTask(dj.Manual):
 #     definition = """
 #     # Task that should be triggered or data to be ingested
-    
+#
 #     ---
 #     request_start=CURRENT_TIMESTAMP: timestamp # timestamp when ingestion is requested
 #     params: longblob # parameters to be passed to a minion
 #     """
-
+#
 #     # TODO: Change to accomodate PipelineInput/PipelineMode?
 #     @classmethod
 #     def add_curation_task(cls, pipeline_mode: PipelineMode, scan_key: dict):
@@ -51,7 +51,7 @@ schema = dj.schema("neuropixel_ephys")
 #     ---
 #     request_end=CURRENT_TIMESTAMP: timestamp # timestamp when ingestion is finished
 #     """
-
+#
 #     def make(self, key):
 #         pass
 

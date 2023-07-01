@@ -219,7 +219,7 @@ class Curated(BaseModel, Runnable):
 
 
 # TODO: Ideally, or almost necessarily, the populates need to be passed restrictions.
-class PipelineInput(BaseModel):
+class PipelineInput(BaseModel, Runnable):
     params: Union[Setup, Minion, NoCuration, Curated] = Field(
         discriminator="pipeline_mode"
     )
