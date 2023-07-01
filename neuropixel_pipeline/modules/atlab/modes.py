@@ -161,7 +161,7 @@ class NoCuration(BaseModel, Runnable):
             )
             logging.info("attempting to trigger kilosort clustering")
             task_runner.trigger_clustering(self.check_for_existing_kilosort_results)
-            logging.info("one with kilosort clustering")
+            logging.info("done with kilosort clustering")
         ephys.Clustering.populate(**populate_kwargs)
 
 
