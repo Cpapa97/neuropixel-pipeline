@@ -17,6 +17,44 @@ schema = dj.schema("neuropixel_ephys")
 
 ### ----------------------------- Table declarations ----------------------
 
+# ------------ Tasks --------------
+
+
+# # TODO: Should this be here or atlab specific??
+# @schema
+# class IngestionTask(dj.Manual):
+#     definition = """
+#     # Task that should be triggered or data to be ingested
+    
+#     ---
+#     request_start=CURRENT_TIMESTAMP: timestamp # timestamp when ingestion is requested
+#     params: longblob # parameters to be passed to a minion
+#     """
+
+#     # TODO: Change to accomodate PipelineInput/PipelineMode?
+#     @classmethod
+#     def add_curation_task(cls, pipeline_mode: PipelineMode, scan_key: dict):
+#         with cls.connection.transaction:
+#             cls.insert1(
+#                 dict(
+#                     pipeline_mode=pipeline_mode,
+#                     params=params,
+#                 )
+#             )
+
+
+# @schema
+# class IngestionTaskFinished(dj.Computed):
+#     definition = """
+#     # Ingestion task finished
+#     -> IngestionTask
+#     ---
+#     request_end=CURRENT_TIMESTAMP: timestamp # timestamp when ingestion is finished
+#     """
+
+#     def make(self, key):
+#         pass
+
 
 # ------------ Pre-Clustering --------------
 
@@ -456,43 +494,6 @@ class CurationType(dj.Lookup):  # Table definition subject to change
     """
 
     contents = zip(["no curation", "phy"])
-
-
-@schema
-class CurationTask(dj.Manual):
-    definition = """
-    # Curation that should be ingested
-    -> Clustering
-    -> CurationType
-    curation_output_dir: varchar(255) # output directory of the curated results to be ingested
-    """
-
-    @classmethod
-    def add_curation_task(
-        cls, scan_key: dict, curation_type: str, curation_output_dir: Path
-    ):
-        with cls.connection.transaction:
-            clustering_key = (Clustering & (Session & scan_key)).fetch1("KEY")
-            cls.insert1(
-                dict(
-                    **clustering_key,
-                    curation=curation_type,
-                    curation_output_dir=curation_output_dir,
-                )
-            )
-
-
-@schema
-class CurationTaskFinished(dj.Imported):
-    definition = """
-    # Curation ingestion task finished
-    -> CurationTask
-    ---
-    timestamp=CURRENT_TIMESTAMP: timestamp # timestamp when curated results were inserted
-    """
-
-    def make(self, key):
-        pass
 
 
 @schema
