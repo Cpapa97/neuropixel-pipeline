@@ -226,10 +226,7 @@ class PipelineInput(BaseModel, Runnable):
     restriction: Optional[
         Any
     ] = None  # TODO: pass these through to the run methods + populates
-    populate_kwargs: dict = {
-        "reserve_jobs": True,
-        "suppress_errors": True,
-    }
+    populate_kwargs: dict = {"reserve_jobs": True}
 
     def run(self):
         logging.info("starting neuropixel pipeline")

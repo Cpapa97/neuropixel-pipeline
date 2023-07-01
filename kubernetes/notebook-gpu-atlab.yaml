@@ -70,14 +70,10 @@ spec:
         "mkdir -p /src &&\
         cd /src &&\
         git clone https://$(GITHUB_USERNAME):$(GITHUB_PASSWORD)@github.com/cajal/stimulus-pipeline.git &&\
-        pip3 install stimulus-pipeline/python/ &&\
-        cd stimulus-pipeline/python/; \
-        conda run --no-capture-output -n kilosort python -m pip install -e . &&\
-        cd ..; \
+        conda run --no-capture-output -n kilosort python -m pip install -e stimulus-pipeline/python/; \
         git clone --depth 1 --branch minion-pipeline https://github.com/Cpapa97/neuropixel-pipeline.git &&\
-        cd neuropixel-pipeline; \
-        conda run --no-capture-output -n kilosort python -m pip install -e . &&\
-        cd notebooks &&\
+        conda run --no-capture-output -n kilosort python -m pip install -e neuropixel-pipeline/;
+        cd neuropixel-pipeline/notebooks/ && conda run --no-capture-output -n kilosort \
         jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser --NotebookApp.token=''"]
 
 ---

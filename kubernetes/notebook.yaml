@@ -46,9 +46,8 @@ spec:
         "mkdir -p /src &&\
         cd /src &&\
         git clone https://github.com/atlab/neuropixel-pipeline.git &&\
-        cd neuropixel-pipeline &&\
-        pip3 install . &&\
-        cd notebooks &&\
+        pip3 install neuropixel-pipeline/ &&\
+        cd neuropixel-pipeline/notebooks/ &&\
         jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser --NotebookApp.token=''"]
 
 ---
