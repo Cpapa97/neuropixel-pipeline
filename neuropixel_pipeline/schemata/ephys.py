@@ -8,6 +8,7 @@ import numpy as np
 from neuropixel_pipeline.api.postclustering import QualityMetricsRunner
 from . import probe
 from .. import utils
+from ..config import PipelineConfig, atlab
 from ..readers import labview, kilosort
 from pathlib import Path
 
@@ -16,6 +17,21 @@ schema = dj.schema("neuropixel_ephys")
 
 
 ### ----------------------------- Table declarations ----------------------
+
+# ------------ Base Config --------------
+
+@schema
+class PipelineConfig(dj.Lookup):
+    definition = """
+    # Config that determines certain runtime behavior
+    name: varchar(255)  # name of the config
+    ---
+    config: longblob    # PipelineConfig, validated by pydantic
+    """
+
+    contents = [
+        ["atlab", atlab.atlab_pipeline_config] # without .model_dump() this only works with dj's enable_python_native_blobs
+    ]
 
 # ------------ Tasks --------------
 
