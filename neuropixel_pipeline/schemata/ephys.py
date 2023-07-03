@@ -20,7 +20,7 @@ schema = dj.schema("neuropixel_ephys")
 
 # ------------ Base Config --------------
 
-@schema
+@schema # Rename PipelineConfig table to not shadow config.PipelineConfig?
 class PipelineConfig(dj.Lookup):
     definition = """
     # Config that determines certain runtime behavior
@@ -33,8 +33,8 @@ class PipelineConfig(dj.Lookup):
         ["atlab", atlab.atlab_pipeline_config] # without .model_dump() this only works with dj's enable_python_native_blobs
     ] # need to also consider that part of probe_setup is currently manual, except for at-lab where is isn't...
 
-# ------------ Tasks --------------
 
+# ------------ Tasks --------------
 
 # # TODO: Should this be here or atlab specific??
 # @schema
