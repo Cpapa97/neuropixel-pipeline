@@ -8,4 +8,5 @@ from . import (
     clustering,
     postclustering,
     clustering_task,
+    lfp,
 )

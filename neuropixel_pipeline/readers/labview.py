@@ -9,8 +9,12 @@ from pydantic import BaseModel, Field, field_validator, constr
 from typing import List, Tuple, Any, Optional, Dict
 import numpy as np
 
-from ..api.metadata import NeuropixelConfig
+
+from ..api import metadata, lfp
+from neuropixel_pipeline.api.lfp import LfpMetrics
 from .. import utils
+
+NEUROPIXEL_PREFIX = "NPElectrophysiology"
 
 
 class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
@@ -62,6 +66,8 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
         if normalized_key_name in original_key_name:
             meta[normalized_key_name] = meta.pop(original_key_name)
 
+    # eventually might want to have a function wrapper above this that selects based on
+    # an existing attribute file next to the bin or still uses h5 if not (if possible).
     @classmethod
     def from_h5(
         cls,
@@ -70,7 +76,7 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
         load_config_data=True,
     ) -> LabviewNeuropixelMeta:
         """
-        Uses an h5 family driver if necessary
+        Uses an h5 family driver
         """
         import h5py
 
@@ -109,7 +115,41 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
     def electrode_config_hash(self) -> str:
         return utils.dict_to_uuid(self.model_dump())
 
-    def to_metadata(self) -> NeuropixelConfig:
+    def to_metadata(self) -> metadata.NeuropixelConfig:
         raise NotImplementedError(
             "This isn't implemented but is needed for neuropixel config generation"
         )
+
+
+class LabviewBin(BaseModel):
+    bin_path: Path
+
+    @staticmethod
+    def find_from_prefix(
+        session_dir: Path,
+        prefix: str = NEUROPIXEL_PREFIX,
+    ):
+        return LabviewBin(
+            bin_path=utils.check_for_first_bin_with_prefix(
+                session_dir=session_dir,
+                prefix=prefix,
+            )
+        )
+
+    @staticmethod
+    def extract_lfp_metrics(
+        self,
+        microvolt_conversion_factor: float,
+        num_channels=384,
+        has_sync_channel=True,
+    ) -> lfp.LfpMetrics:
+        data = utils.extract_data_from_bin(
+            bin_file=self.bin_path,
+            num_channels=num_channels,
+            has_sync_channel=has_sync_channel,
+        )
+        # now calculate lfp metrics
+        raise NotImplementedError(
+            f"lfp not implemented yet for LabviewV1: here's the data though: {data}"
+        )
+        return lfp.LfpMetrics()

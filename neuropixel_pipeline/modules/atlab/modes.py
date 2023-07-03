@@ -5,7 +5,7 @@ import logging
 
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import Union, Literal, Optional, Any
+from typing import Union, Literal, Optional
 from pathlib import Path
 
 from .common import ScanKey
@@ -56,6 +56,8 @@ class Minion(BaseModel, Runnable):
     base_dir: Path
 
     def run(self, **populate_kwargs):
+        # essentially should just run NoCuration or Curated based on keys from an IngestionTask table
+        # might even be able to just call PipelineInput directly with the pipeline_mode
         pass
 
 
@@ -146,7 +148,8 @@ class NoCuration(BaseModel, Runnable):
         ephys.ClusteringTask.insert1(task_source_key, skip_duplicates=True)
 
         if self.clustering_task_mode is ClusteringTaskMode.TRIGGER:
-            NEUROPIXEL_PREFIX = "NPElectrophysiology"
+            from ...readers.labview import NEUROPIXEL_PREFIX
+
             clustering_params = (
                 (ephys.ClusteringParamSet & {"paramset_idx": paramset_idx})
                 .fetch("params")

@@ -248,12 +248,17 @@ class LFP(dj.Imported):
         electrode_keys, lfp = [], []
 
         if acq_software == "LabviewV1":
-            labview_metadata = labview.LabviewNeuropixelMeta.from_h5(
-                recording_meta["session_path"]
+            session_path = recording_meta["session_path"]
+            labview_metadata = labview.LabviewNeuropixelMeta.from_h5(session_path)
+            labview_bin = labview.LabviewBin.find_from_prefix(session_path)
+            lfp_metrics = labview_bin.extract_lfp_metrics(
+                microvolt_conversion_factor=labview_metadata.scale[1],
+                num_channels=len(labview_metadata.channels()),
+                has_sync_channel=True,
             )
-
-            raise NotImplementedError(
-                "LabviewV1 not implemented yet for LFP population"
+            self.insert1(
+                **key,
+                **lfp_metrics.model_dump(),
             )
         elif acq_software == "SpikeGLX":
             spikeglx_meta_filepath = get_spikeglx_meta_filepath(key)
@@ -483,8 +488,6 @@ class Clustering(dj.Imported):
 
 
 # Probably more layers above this are useful (for multiple users per curation, auto-curation maybe, etc.)
-# Also further downstream to keep in mind what would be necessary to fully ingest phy (https://github.com/cortex-lab/phy)
-#   "The [phy] GUI keeps track of all decisions in a file called phy.log"
 @schema
 class CurationType(dj.Lookup):  # Table definition subject to change
     definition = """
