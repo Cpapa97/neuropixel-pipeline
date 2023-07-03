@@ -4,7 +4,8 @@ __version__ = "0.0.2"
 
 from . import api
 from . import readers
+from . import config
 from . import schemata
 from . import utils
 
-__all__ = ["api", "readers", "schemata", "utils", "__version__"]
+__all__ = ["api", "readers", "config", "schemata", "utils", "__version__"]
