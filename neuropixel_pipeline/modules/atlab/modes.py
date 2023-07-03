@@ -111,9 +111,10 @@ class NoCuration(BaseModel, Runnable):
             ),
             skip_duplicates=True,
         )
-        ephys.EphysRecording.populate(**populate_kwargs)
+        session_restriction = dict(**insertion_key)
+        ephys.EphysRecording.populate(session_restriction, **populate_kwargs)
 
-        # ephys.LFP.populate(**populate_kwargs)  # This isn't implemented yet
+        # ephys.LFP.populate(session_restriction, **populate_kwargs)  # This isn't implemented yet
 
         logging.info("done with preclustering section")
 
@@ -162,7 +163,8 @@ class NoCuration(BaseModel, Runnable):
             logging.info("attempting to trigger kilosort clustering")
             task_runner.trigger_clustering(self.check_for_existing_kilosort_results)
             logging.info("done with kilosort clustering")
-        ephys.Clustering.populate(**populate_kwargs)
+        session_restriction['paramset_idx'] = paramset_idx
+        ephys.Clustering.populate(session_restriction, **populate_kwargs)
 
         ### Curation Ingestion
         clustering_source_key = ephys.ClusteringTask.build_key_from_scan(
@@ -172,18 +174,19 @@ class NoCuration(BaseModel, Runnable):
             self.curation_input.curation_output_dir = (
                 ephys.ClusteringTask() & clustering_source_key
             ).fetch1("clustering_output_dir")
-        ephys.Curation.create1_from_clustering_task(
+        curation_id = ephys.Curation.create1_from_clustering_task(
             dict(
                 **clustering_source_key,
                 **self.curation_input.model_dump(),
             ),
         )
-        ephys.CuratedClustering.populate(**populate_kwargs)
+        session_restriction['curation_id'] = curation_id
+        ephys.CuratedClustering.populate(session_restriction, **populate_kwargs)
 
         logging.info("done with clustering section")
 
         logging.info("starting post-clustering section")
-        ephys.QualityMetrics.populate(**populate_kwargs)
+        ephys.QualityMetrics.populate(session_restriction, **populate_kwargs)
         logging.info("done with post-clustering section")
 
 
@@ -203,18 +206,24 @@ class Curated(BaseModel, Runnable):
             self.curation_input.curation_output_dir = (
                 ephys.ClusteringTask() & clustering_source_key
             ).fetch1("clustering_output_dir")
-        ephys.Curation.create1_from_clustering_task(
+        curation_id = ephys.Curation.create1_from_clustering_task(
             dict(
                 **clustering_source_key,
                 **self.curation_input.model_dump(),
             ),
         )
-        ephys.CuratedClustering.populate(**populate_kwargs)
+        session_restriction = {
+            'session_id': clustering_source_key['session_id'],
+            'insertion_number': clustering_source_key['insertion_number'],
+            'paramset_idx': clustering_source_key['paramset_idx'],
+            'curation_id': curation_id,
+        }
+        ephys.CuratedClustering.populate(session_restriction, **populate_kwargs)
 
         logging.info("done with clustering section")
 
         logging.info("starting post-clustering section")
-        ephys.QualityMetrics.populate(**populate_kwargs)
+        ephys.QualityMetrics.populate(session_restriction, **populate_kwargs)
         logging.info("done with post-clustering section")
 
 
@@ -223,9 +232,6 @@ class PipelineInput(BaseModel, Runnable):
     params: Union[Setup, Minion, NoCuration, Curated] = Field(
         discriminator="pipeline_mode"
     )
-    restriction: Optional[
-        Any
-    ] = None  # TODO: pass these through to the run methods + populates
     populate_kwargs: dict = {"reserve_jobs": True}
 
     def run(self):
@@ -233,7 +239,6 @@ class PipelineInput(BaseModel, Runnable):
         start_time = time.time()
 
         results = self.params.run(
-            # restriction=self.restriction,  # How much of this can even be directly passed in?
             **self.populate_kwargs,
         )
 

@@ -548,6 +548,7 @@ class Curation(dj.Manual):
                 },
                 skip_duplicates=skip_duplicates,
             )
+        return curation_id
 
 
 # TODO: Remove longblob types, replace with external-attach (or some form of this)
