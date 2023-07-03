@@ -31,7 +31,7 @@ class PipelineConfig(dj.Lookup):
 
     contents = [
         ["atlab", atlab.atlab_pipeline_config] # without .model_dump() this only works with dj's enable_python_native_blobs
-    ]
+    ] # need to also consider that part of probe_setup is currently manual, except for at-lab where is isn't...
 
 # ------------ Tasks --------------
 
