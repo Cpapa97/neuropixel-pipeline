@@ -411,7 +411,6 @@ class ClusteringParamSet(dj.Lookup):
         )
 
 
-# TODO: Will revisit the necessity of this, or put as a separate table
 @schema
 class ClusterQualityLabel(dj.Lookup):
     """Quality label for each spike sorted cluster."""
@@ -554,7 +553,7 @@ class Curation(dj.Manual):
         return curation_id
 
 
-# TODO: Remove longblob types, replace with external-attach (or some form of this)
+# TODO: Remove longblob types, replace with external-blob (or some form of this)
 @schema
 class CuratedClustering(dj.Imported):
     """Clustering results after curation."""
@@ -658,7 +657,7 @@ class CuratedClustering(dj.Imported):
         self.Unit.insert(insert_units)
 
 
-# important to note the original source of these quality metric calculations:
+# note the original source of these quality metric calculations:
 #   https://allensdk.readthedocs.io/en/latest/
 #   https://github.com/AllenInstitute/ecephys_spike_sorting
 #
