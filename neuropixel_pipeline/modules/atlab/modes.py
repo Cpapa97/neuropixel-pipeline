@@ -163,7 +163,7 @@ class NoCuration(BaseModel, Runnable):
             logging.info("attempting to trigger kilosort clustering")
             task_runner.trigger_clustering(self.check_for_existing_kilosort_results)
             logging.info("done with kilosort clustering")
-        session_restriction['paramset_idx'] = paramset_idx
+        session_restriction["paramset_idx"] = paramset_idx
         ephys.Clustering.populate(session_restriction, **populate_kwargs)
 
         ### Curation Ingestion
@@ -180,7 +180,7 @@ class NoCuration(BaseModel, Runnable):
                 **self.curation_input.model_dump(),
             ),
         )
-        session_restriction['curation_id'] = curation_id
+        session_restriction["curation_id"] = curation_id
         ephys.CuratedClustering.populate(session_restriction, **populate_kwargs)
 
         logging.info("done with clustering section")
@@ -213,10 +213,10 @@ class Curated(BaseModel, Runnable):
             ),
         )
         session_restriction = {
-            'session_id': clustering_source_key['session_id'],
-            'insertion_number': clustering_source_key['insertion_number'],
-            'paramset_idx': clustering_source_key['paramset_idx'],
-            'curation_id': curation_id,
+            "session_id": clustering_source_key["session_id"],
+            "insertion_number": clustering_source_key["insertion_number"],
+            "paramset_idx": clustering_source_key["paramset_idx"],
+            "curation_id": curation_id,
         }
         ephys.CuratedClustering.populate(session_restriction, **populate_kwargs)
 
@@ -227,7 +227,6 @@ class Curated(BaseModel, Runnable):
         logging.info("done with post-clustering section")
 
 
-# TODO: Ideally, or almost necessarily, the populates need to be passed restrictions.
 class PipelineInput(BaseModel, Runnable):
     params: Union[Setup, Minion, NoCuration, Curated] = Field(
         discriminator="pipeline_mode"
