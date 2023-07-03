@@ -179,10 +179,6 @@ class EphysRecording(dj.Imported):
             "probe"
         )
 
-        # search session dir and determine acquisition software
-
-        # supported_probe_types = probe.ProbeType.fetch("probe_type")
-
         if acq_software == "LabviewV1":
             labview_meta = labview.LabviewNeuropixelMeta.from_h5(session_path)
             if not str(labview_meta.serial_number) == inserted_probe_serial_number:

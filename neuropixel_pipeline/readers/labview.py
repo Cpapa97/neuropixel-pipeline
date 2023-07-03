@@ -148,7 +148,7 @@ class LabviewBin(BaseModel):
             num_channels=num_channels,
             has_sync_channel=has_sync_channel,
         )
-        # now calculate lfp metrics
+        # TODO: calculate lfp metrics
         raise NotImplementedError(
             f"lfp not implemented yet for LabviewV1: here's the data though: {data}"
         )
