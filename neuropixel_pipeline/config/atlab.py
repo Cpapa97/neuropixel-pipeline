@@ -1,5 +1,5 @@
 from . import PipelineConfig
 
 atlab_pipeline_config = PipelineConfig(
-    directory_suffix=("/raw", "/mnt/scratch09/Ephys")
+    generic_directory_suffix=dict(generic="raw", replacement="/mnt/scratch09/Ephys")
 )

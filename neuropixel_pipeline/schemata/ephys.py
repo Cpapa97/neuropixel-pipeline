@@ -8,7 +8,7 @@ import numpy as np
 from neuropixel_pipeline.api.postclustering import QualityMetricsRunner
 from . import probe
 from .. import utils
-from ..config import PipelineConfig, atlab
+from .config import pipeline_config
 from ..readers import labview, kilosort
 from pathlib import Path
 
@@ -17,22 +17,6 @@ schema = dj.schema("neuropixel_ephys")
 
 
 ### ----------------------------- Table declarations ----------------------
-
-# ------------ Base Config --------------
-
-@schema # Rename PipelineConfig table to not shadow config.PipelineConfig?
-class PipelineConfig(dj.Lookup):
-    definition = """
-    # Config that determines certain runtime behavior
-    name: varchar(255)  # name of the config
-    ---
-    config: longblob    # PipelineConfig, validated by pydantic
-    """
-
-    contents = [
-        ["atlab", atlab.atlab_pipeline_config] # without .model_dump() this only works with dj's enable_python_native_blobs
-    ] # need to also consider that part of probe_setup is currently manual, except for at-lab where is isn't...
-
 
 # ------------ Tasks --------------
 
@@ -189,7 +173,7 @@ class EphysRecording(dj.Imported):
         """Populates table with electrophysiology recording information."""
         ephys_file_data = (EphysFile & key).fetch1()
         acq_software = ephys_file_data["acq_software"]
-        session_path = ephys_file_data["session_path"]
+        session_path = pipeline_config().specify(ephys_file_data["session_path"])
 
         inserted_probe_serial_number = (ProbeInsertion * probe.Probe & key).fetch1(
             "probe"

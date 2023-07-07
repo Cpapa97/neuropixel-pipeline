@@ -53,7 +53,6 @@ class Setup(BaseModel, Runnable):
 
 class Minion(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.MINION] = PipelineMode.MINION
-    base_dir: Path
 
     def run(self, **populate_kwargs):
         # essentially should just run NoCuration or Curated based on keys from an IngestionTask table
@@ -64,7 +63,6 @@ class Minion(BaseModel, Runnable):
 class NoCuration(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.NO_CURATION] = PipelineMode.NO_CURATION
     scan_key: ScanKey
-    base_dir: Path
     acq_software: str = ACQ_SOFTWARE
     insertion_number: int
     # Will ephys.InsertionLocation just be inserted into directly from 2pmaster?
@@ -85,7 +83,7 @@ class NoCuration(BaseModel, Runnable):
         session_meta["rig"] = get_rig(self.scan_key.model_dump())
         ephys.Session.add_session(session_meta, error_on_duplicate=False)
 
-        session_path = get_session_path(self.scan_key, base_dir=self.base_dir)
+        session_path = get_session_path(self.scan_key)
 
         labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
 
@@ -196,7 +194,6 @@ class NoCuration(BaseModel, Runnable):
 class Curated(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.CURATED] = PipelineMode.CURATED
     scan_key: ScanKey
-    base_dir: Path
     curation_input: clustering.CurationInput
 
     def run(self, **populate_kwargs):
