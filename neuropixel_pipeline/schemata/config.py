@@ -12,12 +12,14 @@ from ..config import PipelineConfig, atlab
 
 schema = dj.schema("neuropixel_config")
 
+
 def pipeline_config(name=None):
     if name is None:
         config = (PipelineConfigTable & PipelineConfigTable.Default).fetch1("config")
     else:
         config = (PipelineConfigTable & {"name": name}).fetch1("config")
     return PipelineConfig.model_validate_json(config)
+
 
 @schema  # Rename PipelineConfig table to not shadow config.PipelineConfig?
 class PipelineConfigTable(dj.Lookup):
