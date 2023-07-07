@@ -158,6 +158,7 @@ class NoCuration(BaseModel, Runnable):
                         clustering_output_dir = clustering_output_dir.parent
                     else:
                         clustering_output_dir /= part
+                self.clustering_output_dir = clustering_output_dir
 
         paramset_idx = (
             ephys.ClusteringParamSet & {"clustering_method": self.clustering_method}
@@ -257,7 +258,7 @@ class PipelineInput(BaseModel, Runnable):
     params: Union[Setup, Minion, NoCuration, Curated] = Field(
         discriminator="pipeline_mode"
     )
-    populate_kwargs: dict = {} # {"reserve_jobs": True}
+    populate_kwargs: dict = {}  # {"reserve_jobs": True}
 
     def run(self):
         logging.info("starting neuropixel pipeline")
