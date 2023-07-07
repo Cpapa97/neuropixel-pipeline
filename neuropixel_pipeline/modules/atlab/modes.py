@@ -48,6 +48,12 @@ class Setup(BaseModel, Runnable):
         logging.info("starting setup section")
         probe.ProbeType.fill_neuropixel_probes()
         probe_setup()
+        ephys.ClusteringParamSet.fill(
+            {},
+            clustering_method="kilosort3",
+            description="kilosort3 params (for ingesting)",
+            skip_duplicates=True,
+        )
         logging.info("done with setup section")
 
 
@@ -74,11 +80,20 @@ class NoCuration(BaseModel, Runnable):
         clustering_task.ClusteringTaskMode.TRIGGER
     )
     clustering_output_dir: Optional[Path] = None
+    clustering_output_suffix: Optional[Path] = None
     curation_input: clustering.CurationInput = clustering.CurationInput()
     check_for_existing_kilosort_results: bool = True
 
     def run(self, **populate_kwargs):
         """Preclustering and Clustering"""
+        if (
+            self.clustering_output_dir is not None
+            and self.clustering_output_suffix is not None
+        ):
+            raise ValueError(
+                "clustering_output_dir and clustering_output_suffix can't both have values"
+            )
+
         ### PreClustering
         logging.info("starting preclustering section")
         session_meta = self.scan_key.model_dump()
@@ -132,9 +147,18 @@ class NoCuration(BaseModel, Runnable):
             )
 
         if self.clustering_output_dir is None:
-            self.clustering_output_dir = (
-                session_path / DEFAULT_CLUSTERING_OUTPUT_RELATIVE
-            )
+            if self.clustering_output_suffix is None:
+                self.clustering_output_dir = (
+                    session_path / DEFAULT_CLUSTERING_OUTPUT_RELATIVE
+                )
+            else:
+                suffix_parts = self.clustering_output_suffix.parts
+                clustering_output_dir = Path(session_path)
+                for part in suffix_parts:
+                    if part == "..":
+                        clustering_output_dir = clustering_output_dir.parent
+                    else:
+                        clustering_output_dir /= part
 
         paramset_idx = (
             ephys.ClusteringParamSet & {"clustering_method": self.clustering_method}
