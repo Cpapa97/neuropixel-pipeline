@@ -40,7 +40,6 @@ class PipelineMode(str, Enum):
 
 class Setup(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.SETUP] = PipelineMode.SETUP
-    setup: bool = True
 
     def run(self):
         """Setup for neuropixel_probe"""
@@ -258,7 +257,7 @@ class PipelineInput(BaseModel, Runnable):
     params: Union[Setup, Minion, NoCuration, Curated] = Field(
         discriminator="pipeline_mode"
     )
-    populate_kwargs: dict = {"reserve_jobs": True}
+    populate_kwargs: dict = {} # {"reserve_jobs": True}
 
     def run(self):
         logging.info("starting neuropixel pipeline")
