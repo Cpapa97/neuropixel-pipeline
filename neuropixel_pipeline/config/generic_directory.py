@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validate_call
 from typing import Optional
 from pathlib import Path
 
@@ -13,6 +13,7 @@ class GenericDirectory(BaseModel):
         description="leave as None if the replacement path must be set by each process"
     )
 
+    @validate_call
     def specify(self, generic_path: Path) -> Path:
         parts = generic_path.parts
         index = parts.index(self.generic)
