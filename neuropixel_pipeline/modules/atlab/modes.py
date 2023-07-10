@@ -151,11 +151,11 @@ class NoCuration(BaseModel, Runnable):
         if self.clustering_output_dir is None:
             if self.clustering_output_suffix is None:
                 self.clustering_output_dir = (
-                    session_path / DEFAULT_CLUSTERING_OUTPUT_RELATIVE
+                    generic_path / DEFAULT_CLUSTERING_OUTPUT_RELATIVE
                 )
             else:
                 suffix_parts = self.clustering_output_suffix.parts
-                clustering_output_dir = Path(session_path)
+                clustering_output_dir = Path(generic_path)
                 for part in suffix_parts:
                     if part == "..":
                         clustering_output_dir = clustering_output_dir.parent
