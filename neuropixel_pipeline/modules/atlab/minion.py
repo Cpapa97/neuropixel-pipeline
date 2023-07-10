@@ -10,6 +10,7 @@ schema = dj.schema("neuropixel_minion")
 
 # ------------ Tasks --------------
 
+
 @schema
 class IngestionTask(dj.Manual):
     definition = """

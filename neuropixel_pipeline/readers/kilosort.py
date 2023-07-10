@@ -155,7 +155,7 @@ class Kilosort:
 
         self._data["cluster_groups"] = np.array(df[cluster_col_name].values)
         self._data["cluster_ids"] = np.array(df["cluster_id"].values)
-        
+
     def get_best_channel(self, unit):
         template_idx = self.data["spike_templates"][
             np.where(self.data["spike_clusters"] == unit)[0][0]

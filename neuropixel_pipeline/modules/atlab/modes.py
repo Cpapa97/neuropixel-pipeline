@@ -47,7 +47,7 @@ class Setup(BaseModel, Runnable):
         ### Setup
         logging.info("starting setup section")
         if not PipelineConfigTable.Default():
-            PipelineConfigTable.set_default('atlab')
+            PipelineConfigTable.set_default("atlab")
         probe.ProbeType.fill_neuropixel_probes()
         probe_setup()
         ephys.ClusteringParamSet.fill(
