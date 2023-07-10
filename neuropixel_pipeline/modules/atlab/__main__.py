@@ -28,7 +28,4 @@ def main(args: PipelineInput):
 
 
 if __name__ == "__main__":
-    ### TODO: Should have a minion mode that checks for any scans to push through the pipeline.
-    ###     Will use the --mode=minion flag.
-    ###     Also check for base_dir is none and try to figure it out? Or not.
     main()
