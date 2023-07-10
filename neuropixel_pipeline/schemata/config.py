@@ -73,6 +73,7 @@ class PathKind(str, Enum):
     CLUSTERING = "clustering"
     CURATION = "curation"
 
+    @validate_call
     def normalize(self, generic_path: Path):
         """
         Handles path kind specific nuances
