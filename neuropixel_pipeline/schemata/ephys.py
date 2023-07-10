@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pydantic import validate_call
 import datajoint as dj
 import numpy as np
 
@@ -9,6 +10,7 @@ from neuropixel_pipeline.api.postclustering import QualityMetricsRunner
 from . import probe
 from .. import utils
 from .config import pipeline_config
+from ..api.metadata import InsertionData
 from ..readers import labview, kilosort
 
 
@@ -55,7 +57,7 @@ class Session(dj.Manual):
         if rel:
             return (cls & scan_key).proj()
         else:
-            return (cls & scan_key).fetch1('session_id')
+            return (cls & scan_key).fetch1("session_id")
 
 
 @schema
@@ -108,6 +110,17 @@ class InsertionLocation(dj.Manual):
     phi=null:    decimal(5, 2) # (deg) - azimuth - rotation about the dv-axis [0, 360] - w.r.t the x+ axis
     beta=null:   decimal(5, 2) # (deg) rotation about the shank of the probe [-180, 180] - clockwise is increasing in degree - 0 is the probe-front facing anterior
     """
+
+    @classmethod
+    @validate_call
+    def fill(cls, scan_key: dict, insertion_number: int, data: InsertionData):
+        cls.insert1(
+            dict(
+                session_id=Session.get_session_id(scan_key),
+                insertion_number=insertion_number,
+                **data.model_dump(),
+            )
+        )
 
 
 @schema

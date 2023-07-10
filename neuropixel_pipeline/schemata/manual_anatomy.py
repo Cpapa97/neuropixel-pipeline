@@ -1,4 +1,4 @@
-from . import ephys  # noqa: F401
+from . import ephys
 import datajoint as dj
 
 schema = dj.schema("neuropixel_manual_anatomy")
@@ -53,3 +53,26 @@ class UnitArea(dj.Manual):
     ---
     -> Area
     """
+
+    @classmethod
+    def restrict_by_scan(cls, scan_key: dict):
+        return cls & (ephys.Session & scan_key)
+
+    @classmethod
+    def fill(
+        cls,
+        scan_key: dict,
+        insertion_number: int,
+        paramset_idx: int,
+        curation_id: int,
+        segmentation_method: str,
+        brain_area: str,
+    ):
+        cls.insert1(dict(
+            session_id=ephys.Session.get_session_id(scan_key)
+            insertion_number=insertion_number,
+            paramset_idx=paramset_idx,
+            curation_id=curation_id,
+            segmentation_method=segmentation_method,
+            brain_area=brain_area,
+        ))
