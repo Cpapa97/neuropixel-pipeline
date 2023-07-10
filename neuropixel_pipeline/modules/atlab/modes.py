@@ -23,7 +23,7 @@ from ...api.clustering_task import ClusteringTaskMode, ClusteringTaskRunner
 from ...readers.labview import LabviewNeuropixelMeta
 from ...utils import check_for_first_bin_with_prefix
 from ...schemata import probe, ephys
-from ...schemata.config import PathKind
+from ...schemata.config import PipelineConfigTable, PathKind
 
 
 class Runnable(abc.ABC):
@@ -46,6 +46,8 @@ class Setup(BaseModel, Runnable):
         """Setup for neuropixel_probe"""
         ### Setup
         logging.info("starting setup section")
+        if not PipelineConfigTable.Default():
+            PipelineConfigTable.set_default('atlab')
         probe.ProbeType.fill_neuropixel_probes()
         probe_setup()
         ephys.ClusteringParamSet.fill(
