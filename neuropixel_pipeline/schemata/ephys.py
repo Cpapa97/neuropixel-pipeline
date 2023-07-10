@@ -55,7 +55,7 @@ class Session(dj.Manual):
         if rel:
             return (cls & scan_key).proj()
         else:
-            return (cls & scan_key).fetch('session_id')
+            return (cls & scan_key).fetch1('session_id')
 
 
 @schema
