@@ -581,9 +581,7 @@ class CuratedClustering(dj.Imported):
         units = []
         for unit, unit_lbl in zip(valid_units, valid_unit_labels):
             if (kilosort_dataset.data["spike_clusters"] == unit).any():
-                unit_channel, depth, _ = kilosort_dataset.get_best_channel(
-                    unit, return_spike_depth=True
-                )
+                unit_channel, depth, _ = kilosort_dataset.get_best_channel(unit)
                 unit_spike_times = (
                     spike_times[kilosort_dataset.data["spike_clusters"] == unit]
                     / sample_rate
