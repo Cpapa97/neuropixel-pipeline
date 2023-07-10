@@ -69,7 +69,7 @@ class UnitArea(dj.Manual):
         brain_area: str,
     ):
         cls.insert1(dict(
-            session_id=ephys.Session.get_session_id(scan_key)
+            session_id=ephys.Session.get_session_id(scan_key),
             insertion_number=insertion_number,
             paramset_idx=paramset_idx,
             curation_id=curation_id,
