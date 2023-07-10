@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from .common import ScanKey
-from ...schemata.config import PathKind
+from ...schemata.config import pipeline_config
 
 
 def get_generic_session_path(scan_key: ScanKey):
@@ -21,8 +21,8 @@ def get_generic_session_path(scan_key: ScanKey):
 
 
 def get_session_path(scan_key: ScanKey, include_generic=False) -> Path:
-    generic_path = get_generic_session_path(scan_key)
-    session_path = PathKind.SESSION.normalize(generic_path)
+    generic_path = get_generic_session_path(scan_key).parent
+    session_path = pipeline_config().specify(generic_path)
     if include_generic:
         return session_path, generic_path
     else:

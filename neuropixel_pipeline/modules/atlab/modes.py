@@ -23,7 +23,7 @@ from ...api.clustering_task import ClusteringTaskMode, ClusteringTaskRunner
 from ...readers.labview import LabviewNeuropixelMeta
 from ...utils import check_for_first_bin_with_prefix
 from ...schemata import probe, ephys
-from ...schemata.config import PipelineConfigTable, PathKind
+from ...schemata.config import PipelineConfigTable, pipeline_config
 
 
 class Runnable(abc.ABC):
@@ -186,7 +186,7 @@ class NoCuration(BaseModel, Runnable):
             )
             task_runner = ClusteringTaskRunner(
                 data_dir=session_path,
-                results_dir=PathKind.CLUSTERING.normalize(self.clustering_output_dir),
+                results_dir=pipeline_config().specify(self.clustering_output_dir),
                 filename=check_for_first_bin_with_prefix(
                     session_path, prefix=NEUROPIXEL_PREFIX
                 ),

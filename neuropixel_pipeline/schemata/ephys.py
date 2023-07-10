@@ -8,7 +8,7 @@ import numpy as np
 from neuropixel_pipeline.api.postclustering import QualityMetricsRunner
 from . import probe
 from .. import utils
-from .config import PathKind
+from .config import pipeline_config
 from ..readers import labview, kilosort
 
 
@@ -134,7 +134,7 @@ class EphysRecording(dj.Imported):
         """Populates table with electrophysiology recording information."""
         ephys_file_data = (EphysFile & key).fetch1()
         acq_software = ephys_file_data["acq_software"]
-        session_path = PathKind.SESSION.normalize(ephys_file_data["session_path"])
+        session_path = pipeline_config().specify(ephys_file_data["session_path"])
 
         inserted_probe_serial_number = (ProbeInsertion * probe.Probe & key).fetch1(
             "probe"
@@ -205,7 +205,7 @@ class LFP(dj.Imported):
         electrode_keys, lfp = [], []
 
         if acq_software == "LabviewV1":
-            session_path = PathKind.SESSION.normalize(recording_meta["session_path"])
+            session_path = pipeline_config().specify(recording_meta["session_path"])
             labview_metadata = labview.LabviewNeuropixelMeta.from_h5(session_path)
             labview_bin = labview.LabviewBin.find_from_prefix(session_path)
             lfp_metrics = labview_bin.extract_lfp_metrics(
@@ -432,7 +432,7 @@ class Clustering(dj.Imported):
     def make(self, key):
         source_key = (ClusteringTask & key).fetch1()
 
-        clustering_output_dir = PathKind.CLUSTERING.normalize(
+        clustering_output_dir = pipeline_config().specify(
             source_key["clustering_output_dir"]
         )
         creation_time, _, _ = kilosort.Kilosort.extract_clustering_info(
@@ -541,7 +541,7 @@ class CuratedClustering(dj.Imported):
     def make(self, key):
         """Automated population of Unit information."""
 
-        curation_output_dir = PathKind.CURATION.normalize(
+        curation_output_dir = pipeline_config().specify(
             (Curation & key).fetch1("curation_output_dir")
         )
         kilosort_dataset = kilosort.Kilosort(curation_output_dir)
@@ -640,7 +640,7 @@ class QualityMetrics(dj.Imported):
         """Populates tables with quality metrics data."""
         import pandas as pd
 
-        curation_output_dir = PathKind.CURATION.normalize(
+        curation_output_dir = pipeline_config().specify(
             (Curation & key).fetch1("curation_output_dir")
         )
 

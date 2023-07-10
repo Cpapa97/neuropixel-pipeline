@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import datajoint as dj
 from pydantic import validate_call
-from pathlib import Path
-from enum import Enum
 
 from ..config import PipelineConfig, atlab
 
@@ -62,32 +60,3 @@ class PipelineConfigTable(dj.Lookup):
     @classmethod
     def get_default(cls) -> PipelineConfig:
         return PipelineConfig.model_validate_json((cls & cls.Default).fetch1("config"))
-
-
-class PathKind(str, Enum):
-    """
-    Filepath Kind
-    """
-
-    SESSION = "session"
-    CLUSTERING = "clustering"
-    CURATION = "curation"
-
-    @validate_call
-    def normalize(self, generic_path: Path):
-        """
-        Handles path kind specific nuances
-
-        This is the function that should generally be used
-        """
-        specific_path = pipeline_config().specify(generic_path)
-        if self is PathKind.SESSION:
-            return specific_path.parent
-        elif self is PathKind.CLUSTERING:
-            return specific_path
-        elif self is PathKind.CURATION:
-            return specific_path
-        else:
-            raise NotImplementedError(
-                f"this is not implemented for this PathKind: {self}"
-            )
