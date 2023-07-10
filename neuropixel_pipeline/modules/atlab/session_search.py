@@ -20,5 +20,10 @@ def get_generic_session_path(scan_key: ScanKey):
     return Path(ephys_path)
 
 
-def get_session_path(scan_key: ScanKey) -> Path:
-    return PathKind.SESSION.normalize(get_generic_session_path(scan_key))
+def get_session_path(scan_key: ScanKey, include_generic=False) -> Path:
+    generic_path = get_generic_session_path(scan_key)
+    session_path = PathKind.SESSION.normalize(generic_path)
+    if include_generic:
+        return session_path, generic_path
+    else:
+        return session_path

@@ -23,6 +23,7 @@ from ...api.clustering_task import ClusteringTaskMode, ClusteringTaskRunner
 from ...readers.labview import LabviewNeuropixelMeta
 from ...utils import check_for_first_bin_with_prefix
 from ...schemata import probe, ephys
+from ...schemata.config import PathKind
 
 
 class Runnable(abc.ABC):
@@ -83,7 +84,7 @@ class NoCuration(BaseModel, Runnable):
         session_meta["rig"] = get_rig(self.scan_key.model_dump())
         ephys.Session.add_session(session_meta, error_on_duplicate=False)
 
-        session_path = get_session_path(self.scan_key)
+        session_path, generic_path = get_session_path(self.scan_key, include_generic=True)
 
         labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
 
@@ -106,7 +107,7 @@ class NoCuration(BaseModel, Runnable):
         ephys.EphysFile.insert1(
             dict(
                 **insertion_key,
-                session_path=session_path,
+                session_path=generic_path,
                 acq_software=ACQ_SOFTWARE,
             ),
             skip_duplicates=True,
@@ -131,19 +132,18 @@ class NoCuration(BaseModel, Runnable):
 
         if self.clustering_output_dir is None:
             self.clustering_output_dir = (
-                session_path / DEFAULT_CLUSTERING_OUTPUT_RELATIVE
+                generic_path / DEFAULT_CLUSTERING_OUTPUT_RELATIVE
             )
 
         paramset_idx = (
             ephys.ClusteringParamSet & {"clustering_method": self.clustering_method}
         ).fetch1("paramset_idx")
-        task_source_key = dict(
+        ephys.ClusteringTask.insert1(dict(
             **insertion_key,
             paramset_idx=paramset_idx,
             clustering_output_dir=self.clustering_output_dir,
             task_mode=self.clustering_task_mode.value,
-        )
-        ephys.ClusteringTask.insert1(task_source_key, skip_duplicates=True)
+        ), skip_duplicates=True)
 
         if self.clustering_task_mode is ClusteringTaskMode.TRIGGER:
             from ...readers.labview import NEUROPIXEL_PREFIX
@@ -155,7 +155,7 @@ class NoCuration(BaseModel, Runnable):
             )
             task_runner = ClusteringTaskRunner(
                 data_dir=session_path,
-                results_dir=task_source_key["clustering_output_dir"],
+                results_dir=PathKind.CLUSTERING.normalize(self.clustering_output_dir),
                 filename=check_for_first_bin_with_prefix(
                     session_path, prefix=NEUROPIXEL_PREFIX
                 ),
@@ -175,6 +175,7 @@ class NoCuration(BaseModel, Runnable):
             self.curation_input.curation_output_dir = (
                 ephys.ClusteringTask() & clustering_source_key
             ).fetch1("clustering_output_dir")
+        
         curation_id = ephys.Curation.create1_from_clustering_task(
             dict(
                 **clustering_source_key,
