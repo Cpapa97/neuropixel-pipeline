@@ -50,6 +50,13 @@ class Session(dj.Manual):
         else:
             pass
 
+    @classmethod
+    def get_session_id(cls, scan_key: dict, rel=False):
+        if rel:
+            return (cls & scan_key).proj()
+        else:
+            return (cls & scan_key).fetch('session_id')
+
 
 @schema
 class SkullReference(dj.Lookup):
