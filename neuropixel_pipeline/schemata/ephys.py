@@ -378,12 +378,12 @@ class ClusteringParamSet(dj.Lookup):
 
     definition = """
     # Parameter set to be used in a clustering procedure
-    paramset_idx:  smallint auto_increment
+    paramset_idx:  smallint
     ---
     -> ClusteringMethod
     paramset_desc: varchar(128)
     paramset_hash: uuid
-    unique index (paramset_hash)
+    unique index (clustering_method, paramset_hash)
     params: longblob  # dictionary of all applicable parameters
     """
 
@@ -395,9 +395,11 @@ class ClusteringParamSet(dj.Lookup):
         description: str = "",
         skip_duplicates=False,
     ):
+        paramset_idx = dj.U().aggr(cls, n="ifnull(max(paramset_idx)+1,1)").fetch1("n")
         params_uuid = utils.dict_to_uuid(params)
         cls.insert1(
             dict(
+                paramset_idx=paramset_idx,
                 clustering_method=clustering_method,
                 paramset_desc=description,
                 paramset_hash=params_uuid,
