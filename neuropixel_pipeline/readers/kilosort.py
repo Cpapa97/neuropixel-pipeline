@@ -155,48 +155,17 @@ class Kilosort:
 
         self._data["cluster_groups"] = np.array(df[cluster_col_name].values)
         self._data["cluster_ids"] = np.array(df["cluster_id"].values)
-
-    def get_best_channel(self, unit, return_spike_depth=False):
+        
+    def get_best_channel(self, unit):
         template_idx = self.data["spike_templates"][
             np.where(self.data["spike_clusters"] == unit)[0][0]
         ]
         channel_templates = self.data["templates"][template_idx, :, :]
         max_channel_idx = np.abs(channel_templates).max(axis=0).argmax()
         max_channel = self.data["channel_map"][max_channel_idx]
+        max_depth = self.data["channel_positions"][:, 1][max_channel_idx]
 
-        if return_spike_depth:
-            depth = self.data["channel_positions"][:, 1][max_channel_idx]
-            return max_channel, max_channel_idx, depth
-        else:
-            return max_channel, max_channel_idx
-
-    def extract_spike_depths(self):
-        """Reimplemented from https://github.com/cortex-lab/spikes/blob/master/analysis/ksDriftmap.m"""
-
-        if "pc_features" in self.data:
-            ycoords = self.data["channel_positions"][:, 1]
-            pc_features = self.data["pc_features"][:, 0, :]  # 1st PC only
-            pc_features = np.where(pc_features < 0, 0, pc_features)
-
-            # ---- compute center of mass of these features (spike depths) ----
-
-            # which channels for each spike?
-            spk_feature_ind = self.data["pc_feature_ind"][
-                self.data["spike_templates"], :
-            ]
-            # ycoords of those channels?
-            spk_feature_ycoord = ycoords[spk_feature_ind]
-            # center of mass is sum(coords.*features)/sum(features)
-            self._data["spike_depths"] = np.sum(
-                spk_feature_ycoord * pc_features**2, axis=1
-            ) / np.sum(pc_features**2, axis=1)
-        else:
-            self._data["spike_depths"] = None
-
-        # ---- extract spike sites ----
-        max_site_ind = np.argmax(np.abs(self.data["templates"]).max(axis=1), axis=1)
-        spike_site_ind = max_site_ind[self.data["spike_templates"]]
-        self._data["spike_sites"] = self.data["channel_map"][spike_site_ind]
+        return max_channel, max_depth, max_channel_idx
 
     @staticmethod
     def extract_clustering_info(cluster_output_dir: Path):

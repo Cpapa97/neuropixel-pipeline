@@ -8,53 +8,14 @@ import numpy as np
 from neuropixel_pipeline.api.postclustering import QualityMetricsRunner
 from . import probe
 from .. import utils
-from .config import pipeline_config, PathKind
+from .config import PathKind
 from ..readers import labview, kilosort
-from pathlib import Path
 
 
 schema = dj.schema("neuropixel_ephys")
 
 
 ### ----------------------------- Table declarations ----------------------
-
-# ------------ Tasks --------------
-
-# # TODO: Should this be here or atlab specific??
-# @schema
-# class IngestionTask(dj.Manual):
-#     definition = """
-#     # Task that should be triggered or data to be ingested
-#
-#     ---
-#     request_start=CURRENT_TIMESTAMP: timestamp # timestamp when ingestion is requested
-#     params: longblob # parameters to be passed to a minion
-#     """
-#
-#     # TODO: Change to accomodate PipelineInput/PipelineMode?
-#     @classmethod
-#     def add_curation_task(cls, pipeline_mode: PipelineMode, scan_key: dict):
-#         with cls.connection.transaction:
-#             cls.insert1(
-#                 dict(
-#                     pipeline_mode=pipeline_mode,
-#                     params=params,
-#                 )
-#             )
-
-
-# @schema
-# class IngestionTaskFinished(dj.Computed):
-#     definition = """
-#     # Ingestion task finished
-#     -> IngestionTask
-#     ---
-#     request_end=CURRENT_TIMESTAMP: timestamp # timestamp when ingestion is finished
-#     """
-#
-#     def make(self, key):
-#         pass
-
 
 # ------------ Pre-Clustering --------------
 
@@ -575,7 +536,6 @@ class CuratedClustering(dj.Imported):
         -> ClusterQualityLabel
         spike_count : int         # how many spikes in this recording for this unit
         spike_times : longblob    # (s) spike times of this unit, relative to the start of the EphysRecording
-        spike_sites : longblob    # array of electrode associated with each spike
         """
 
     def make(self, key):
@@ -625,7 +585,7 @@ class CuratedClustering(dj.Imported):
         units = []
         for unit, unit_lbl in zip(valid_units, valid_unit_labels):
             if (kilosort_dataset.data["spike_clusters"] == unit).any():
-                unit_channel, _, depth = kilosort_dataset.get_best_channel(
+                unit_channel, depth, _ = kilosort_dataset.get_best_channel(
                     unit, return_spike_depth=True
                 )
                 unit_spike_times = (
@@ -644,9 +604,6 @@ class CuratedClustering(dj.Imported):
                         "depth": depth,
                         "spike_times": unit_spike_times,
                         "spike_count": spike_count,
-                        "spike_sites": spike_sites[
-                            kilosort_dataset.data["spike_clusters"] == unit
-                        ],
                     }
                 )
 
