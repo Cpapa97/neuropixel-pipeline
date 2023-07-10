@@ -34,7 +34,6 @@ class PipelineConfigTable(dj.Lookup):
         ["atlab", atlab.atlab_pipeline_config.model_dump_json()]
     ]  # need to also consider that part of probe_setup is currently manual, except for at-lab where is isn't...
 
-    @schema
     class Default(dj.Part):
         definition = """
         # Default configuration (only one entry enforced at a time)
