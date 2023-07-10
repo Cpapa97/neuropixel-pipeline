@@ -1,7 +1,7 @@
 from . import ephys  # noqa: F401
 import datajoint as dj
 
-schema = dj.schema("manual_anatomy", "neuropixel_manual_anatomy")
+schema = dj.schema("neuropixel_manual_anatomy")
 
 
 @schema
