@@ -80,13 +80,13 @@ class PathKind(str, Enum):
         This is the function that should generally be used
         """
         specific_path = pipeline_config().specify(generic_path)
-        if self.kind is PathKind.SESSION:
+        if self is PathKind.SESSION:
             return specific_path.parent
-        elif self.kind is PathKind.CLUSTERING:
+        elif self is PathKind.CLUSTERING:
             return specific_path
-        elif self.kind is PathKind.CURATION:
+        elif self is PathKind.CURATION:
             return specific_path
         else:
             raise NotImplementedError(
-                f"this is not implemented for this PathKind: {self.kind}"
+                f"this is not implemented for this PathKind: {self}"
             )
