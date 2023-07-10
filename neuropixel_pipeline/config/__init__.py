@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Tuple
+from pydantic import BaseModel
+from typing import Optional
 from pathlib import Path
 
 from .generic_directory import GenericDirectory
