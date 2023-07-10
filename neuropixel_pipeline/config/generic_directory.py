@@ -17,5 +17,10 @@ class GenericDirectory(BaseModel):
     def specify(self, generic_path: Path) -> Path:
         generic_path = Path(generic_path)
         parts = generic_path.parts
-        index = parts.index(self.generic)
+        try:
+            index = parts.index(self.generic)
+        except ValueError:
+            raise ValueError(
+                f"Path does not contain the expected generic component: '{self.generic}', in path: '{generic_path}'"
+            )
         return Path(self.replacement).joinpath(*parts[index + 1 :])
