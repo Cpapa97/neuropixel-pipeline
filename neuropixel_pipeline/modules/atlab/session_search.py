@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from .common import ScanKey
-from .path_kind import PathData
+from ...schemata.config import PathKind
 
 
 def get_generic_session_path(scan_key: ScanKey):
@@ -20,10 +20,10 @@ def get_generic_session_path(scan_key: ScanKey):
     return Path(ephys_path)
 
 
-def get_session_path(scan_key: ScanKey, base_dir: Path = None) -> Path:
-    generic_session_path = PathData(
-        path=get_generic_session_path(scan_key), kind="session"
-    )
-    if base_dir is not None:
-        return generic_session_path.normalized(base_dir)
-    return generic_session_path
+def get_session_path(scan_key: ScanKey, include_generic=False) -> Path:
+    generic_path = get_generic_session_path(scan_key)
+    session_path = PathKind.SESSION.normalize(generic_path)
+    if include_generic:
+        return session_path, generic_path
+    else:
+        return session_path
