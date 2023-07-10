@@ -10,4 +10,6 @@ class PipelineConfig(BaseModel):
 
     def specify(self, path: Path):
         if self.generic_directory_suffix is not None:
-            self.generic_directory_suffix.specify(path)
+            return self.generic_directory_suffix.specify(path)
+        else:
+            return path
