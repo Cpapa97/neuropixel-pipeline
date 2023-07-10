@@ -156,7 +156,7 @@ class Kilosort:
         self._data["cluster_groups"] = np.array(df[cluster_col_name].values)
         self._data["cluster_ids"] = np.array(df["cluster_id"].values)
 
-    def get_best_channel(self, unit):
+    def get_best_channel(self, unit, return_spike_depth=False):
         template_idx = self.data["spike_templates"][
             np.where(self.data["spike_clusters"] == unit)[0][0]
         ]
@@ -164,7 +164,11 @@ class Kilosort:
         max_channel_idx = np.abs(channel_templates).max(axis=0).argmax()
         max_channel = self.data["channel_map"][max_channel_idx]
 
-        return max_channel, max_channel_idx
+        if return_spike_depth:
+            depth = self.data["channel_positions"][:, 1][max_channel_idx]
+            return max_channel, max_channel_idx, depth
+        else:
+            return max_channel, max_channel_idx
 
     def extract_spike_depths(self):
         """Reimplemented from https://github.com/cortex-lab/spikes/blob/master/analysis/ksDriftmap.m"""

@@ -65,7 +65,7 @@ class Session(dj.Manual):
 
     definition = """
     # Session: table connection
-    session_id : int # Session primary key hash
+    session_id : int # Session primary key
     ---
     animal_id=null: int unsigned # animal id
     session=null: smallint unsigned # original session id
@@ -575,8 +575,7 @@ class CuratedClustering(dj.Imported):
         -> ClusterQualityLabel
         spike_count : int         # how many spikes in this recording for this unit
         spike_times : longblob    # (s) spike times of this unit, relative to the start of the EphysRecording
-        spike_sites : longblob   # array of electrode associated with each spike
-        spike_depths=null : longblob  # (um) array of depths associated with each spike, relative to the (0, 0) of the probe
+        spike_sites : longblob    # array of electrode associated with each spike
         """
 
     def make(self, key):
@@ -612,9 +611,8 @@ class CuratedClustering(dj.Imported):
         spike_times = kilosort_dataset.data[spike_time_key]
         kilosort_dataset.extract_spike_depths()
 
-        # -- Spike-sites and Spike-depths --
+        # -- Spike-sites --
         spike_sites = kilosort_dataset.data["spike_sites"]
-        spike_depths = kilosort_dataset.data["spike_depths"]
 
         electrode_config_hash = (EphysRecording * probe.ElectrodeConfig & key).fetch1(
             "electrode_config_hash"
@@ -627,7 +625,9 @@ class CuratedClustering(dj.Imported):
         units = []
         for unit, unit_lbl in zip(valid_units, valid_unit_labels):
             if (kilosort_dataset.data["spike_clusters"] == unit).any():
-                unit_channel, _ = kilosort_dataset.get_best_channel(unit)
+                unit_channel, _, depth = kilosort_dataset.get_best_channel(
+                    unit, return_spike_depth=True
+                )
                 unit_spike_times = (
                     spike_times[kilosort_dataset.data["spike_clusters"] == unit]
                     / sample_rate
@@ -641,16 +641,12 @@ class CuratedClustering(dj.Imported):
                         "electrode_config_hash": electrode_config_hash,
                         "probe_type": probe_type,
                         "electrode": unit_channel,
+                        "depth": depth,
                         "spike_times": unit_spike_times,
                         "spike_count": spike_count,
                         "spike_sites": spike_sites[
                             kilosort_dataset.data["spike_clusters"] == unit
                         ],
-                        "spike_depths": spike_depths[
-                            kilosort_dataset.data["spike_clusters"] == unit
-                        ]
-                        if spike_depths is not None
-                        else None,
                     }
                 )
 
