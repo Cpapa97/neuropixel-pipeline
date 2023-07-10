@@ -530,10 +530,11 @@ class CuratedClustering(dj.Imported):
         definition = """
         # Properties of a given unit from a round of clustering (and curation)
         -> master
-        unit_id: int
+        unit_id     : int
         ---
         -> probe.ElectrodeConfig.Electrode  # electrode with highest waveform amplitude for this unit
         -> ClusterQualityLabel
+        depth       : float       # depth of the electrode
         spike_count : int         # how many spikes in this recording for this unit
         spike_times : longblob    # (s) spike times of this unit, relative to the start of the EphysRecording
         """
