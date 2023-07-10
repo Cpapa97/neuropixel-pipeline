@@ -569,10 +569,6 @@ class CuratedClustering(dj.Imported):
             else "spike_times"
         )
         spike_times = kilosort_dataset.data[spike_time_key]
-        kilosort_dataset.extract_spike_depths()
-
-        # -- Spike-sites --
-        spike_sites = kilosort_dataset.data["spike_sites"]
 
         electrode_config_hash = (EphysRecording * probe.ElectrodeConfig & key).fetch1(
             "electrode_config_hash"
