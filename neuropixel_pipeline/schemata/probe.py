@@ -6,6 +6,7 @@ Neuropixels Probes
 
 from __future__ import annotations
 
+from pydantic import validate_call
 import datajoint as dj
 import numpy as np
 
@@ -103,13 +104,13 @@ class ElectrodeConfig(dj.Lookup):
         """
 
     @classmethod
+    @validate_call
     def add_new_config(
         cls,
         metadata: labview.LabviewNeuropixelMeta,
         probe_type: str,
         electrode_config_name: str = "",
     ):
-        metadata = labview.LabviewNeuropixelMeta.model_validate(metadata)
         electrode_config_key = {
             "electrode_config_hash": metadata.electrode_config_hash()
         }

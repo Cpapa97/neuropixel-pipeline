@@ -11,16 +11,28 @@ from ..config import PipelineConfig, atlab
 schema = dj.schema("neuropixel_config")
 
 
-def pipeline_config(name=None):
-    if name is None:
-        config = (PipelineConfigTable & PipelineConfigTable.Default).fetch1("config")
+def pipeline_config(name=None, use_global=None, override_global=False):
+    if use_global is None:
+        use_global = pipeline_config(name=name, use_global=True).use_global_config
+
+    if use_global:
+        global instance_config
+
+    if not override_global and use_global and "instance_config" in globals():
+        return instance_config
     else:
-        config = (PipelineConfigTable & {"name": name}).fetch1("config")
-    return PipelineConfig.model_validate_json(config)
+        if name is None:
+            config = (PipelineConfigStore & PipelineConfigStore.Default).fetch1(
+                "config"
+            )
+        else:
+            config = (PipelineConfigStore & {"name": name}).fetch1("config")
+        instance_config = PipelineConfig.model_validate_json(config)
+    return instance_config
 
 
 @schema  # Rename PipelineConfig table to not shadow config.PipelineConfig?
-class PipelineConfigTable(dj.Lookup):
+class PipelineConfigStore(dj.Lookup):
     definition = """
     # Config that determines certain runtime behavior
     name: varchar(255)  # name of the config

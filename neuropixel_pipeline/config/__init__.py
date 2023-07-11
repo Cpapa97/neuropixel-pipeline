@@ -6,6 +6,7 @@ from .generic_directory import GenericDirectory
 
 
 class PipelineConfig(BaseModel):
+    use_global_config: bool = False
     generic_directory_suffix: Optional[GenericDirectory] = None
 
     # @validate_call

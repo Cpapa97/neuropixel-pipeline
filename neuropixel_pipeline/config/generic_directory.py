@@ -15,6 +15,8 @@ class GenericDirectory(BaseModel):
 
     # @validate_call
     def specify(self, generic_path: Path) -> Path:
+        if self.replacement is None:
+            raise ValueError("self.replacement cannot be None for this method")
         generic_path = Path(generic_path)
         parts = generic_path.parts
         try:
