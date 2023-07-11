@@ -141,7 +141,7 @@ class Kilosort:
 
         # Read the Cluster Groups
         for cluster_pattern, cluster_col_name in [
-            ("cluster_group.*", "group"),
+            ("cluster_group.*", "KSLabel"),
             ("cluster_KSLabel.*", "KSLabel"),
         ]:
             try:
@@ -150,13 +150,11 @@ class Kilosort:
                 pass
             else:
                 df = read_cluster_file(cluster_file)
-                print(df)
-                print(len(df))
-                if len(df) > 1:
+                if len(df) > 0:
                     break
         else:
             raise FileNotFoundError(
-                'Neither "cluster_groups" nor "cluster_KSLabel" file found!'
+                'Neither "cluster_groups" nor "cluster_KSLabel" file found (with or without data)!'
             )
 
         self._data["cluster_groups"] = np.array(df[cluster_col_name].values)
