@@ -50,6 +50,7 @@ class UnitArea(dj.Manual):
     # brain area membership per unit
     -> ephys.CuratedClustering
     -> SegmentationMethod
+    unit_id     : int
     ---
     -> Area
     """
@@ -66,6 +67,7 @@ class UnitArea(dj.Manual):
         paramset_idx: int,
         curation_id: int,
         segmentation_method: str,
+        unit_id: int,
         brain_area: str,
     ):
         cls.insert1(
@@ -75,6 +77,7 @@ class UnitArea(dj.Manual):
                 paramset_idx=paramset_idx,
                 curation_id=curation_id,
                 segmentation_method=segmentation_method,
+                unit_id=unit_id,
                 brain_area=brain_area,
             )
         )
