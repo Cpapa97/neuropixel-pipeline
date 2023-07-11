@@ -68,11 +68,13 @@ class UnitArea(dj.Manual):
         segmentation_method: str,
         brain_area: str,
     ):
-        cls.insert1(dict(
-            session_id=ephys.Session.get_session_id(scan_key),
-            insertion_number=insertion_number,
-            paramset_idx=paramset_idx,
-            curation_id=curation_id,
-            segmentation_method=segmentation_method,
-            brain_area=brain_area,
-        ))
+        cls.insert1(
+            dict(
+                session_id=ephys.Session.get_session_id(scan_key),
+                insertion_number=insertion_number,
+                paramset_idx=paramset_idx,
+                curation_id=curation_id,
+                segmentation_method=segmentation_method,
+                brain_area=brain_area,
+            )
+        )

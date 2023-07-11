@@ -1,8 +1,9 @@
 import logging
 import re
+import os
 from pathlib import Path
 from datetime import datetime
-from os import path
+from pydantic import validate_call
 
 import numpy as np
 import pandas as pd
@@ -92,6 +93,17 @@ class Kilosort:
                         pass
             return value
 
+        @validate_call
+        def read_cluster_file(cluster_file: Path):
+            cluster_file_suffix = cluster_file.suffix
+            if cluster_file_suffix == ".tsv":
+                df = pd.read_csv(cluster_file, sep="\t", header=0)
+            elif cluster_file_suffix == ".xlsx":
+                df = pd.read_excel(cluster_file, engine="openpyxl")
+            else:
+                df = pd.read_csv(cluster_file, delimiter="\t")
+            return df
+
         self._data = {}
         for kilosort_filename in Kilosort.kilosort_files:
             kilosort_filepath = self._kilosort_dir / kilosort_filename
@@ -100,7 +112,7 @@ class Kilosort:
                 log.debug("skipping {} - does not exist".format(kilosort_filepath))
                 continue
 
-            base, ext = path.splitext(kilosort_filename)
+            base, ext = os.path.splitext(kilosort_filename)
             self._files[base] = kilosort_filepath
 
             if kilosort_filename == "params.py":
@@ -128,30 +140,24 @@ class Kilosort:
         self._data["channel_map"] = self._data["channel_map"].flatten()
 
         # Read the Cluster Groups
-        # yes, both cluster_col_name's currently are KSLabel but sometimes it isn't hahaha
         for cluster_pattern, cluster_col_name in [
-            ("cluster_KSLabel.*", "KSLabel"),
             ("cluster_group.*", "group"),
+            ("cluster_KSLabel.*", "KSLabel"),
         ]:
             try:
                 cluster_file = next(self._kilosort_dir.glob(cluster_pattern))
             except StopIteration:
                 pass
             else:
-                cluster_file_suffix = cluster_file.suffix
-                assert cluster_file_suffix in (".tsv", ".xlsx")
-                break
+                df = read_cluster_file(cluster_file)
+                print(df)
+                print(len(df))
+                if len(df) > 1:
+                    break
         else:
             raise FileNotFoundError(
                 'Neither "cluster_groups" nor "cluster_KSLabel" file found!'
             )
-
-        if cluster_file_suffix == ".tsv":
-            df = pd.read_csv(cluster_file, sep="\t", header=0)
-        elif cluster_file_suffix == ".xlsx":
-            df = pd.read_excel(cluster_file, engine="openpyxl")
-        else:
-            df = pd.read_csv(cluster_file, delimiter="\t")
 
         self._data["cluster_groups"] = np.array(df[cluster_col_name].values)
         self._data["cluster_ids"] = np.array(df["cluster_id"].values)

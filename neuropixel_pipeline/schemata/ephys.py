@@ -452,11 +452,8 @@ class Clustering(dj.Imported):
     def make(self, key):
         source_key = (ClusteringTask & key).fetch1()
 
-        clustering_output_dir = pipeline_config().specify(
-            source_key["clustering_output_dir"]
-        )
         creation_time, _, _ = kilosort.Kilosort.extract_clustering_info(
-            clustering_output_dir
+            pipeline_config().specify(source_key["clustering_output_dir"])
         )
         self.insert1(
             dict(
@@ -562,10 +559,9 @@ class CuratedClustering(dj.Imported):
     def make(self, key):
         """Automated population of Unit information."""
 
-        curation_output_dir = pipeline_config().specify(
-            (Curation & key).fetch1("curation_output_dir")
+        kilosort_dataset = kilosort.Kilosort(
+            pipeline_config().specify((Curation & key).fetch1("curation_output_dir"))
         )
-        kilosort_dataset = kilosort.Kilosort(curation_output_dir)
         sample_rate = (EphysRecording & key).fetch1("sampling_rate")
 
         sample_rate = kilosort_dataset.data["params"].get("sample_rate", sample_rate)
