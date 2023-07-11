@@ -61,8 +61,11 @@ class Setup(BaseModel, Runnable):
 
 class Minion(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.MINION] = PipelineMode.MINION
+    base_dir: Optional[Path] = None
 
     def run(self, **populate_kwargs):
+        if self.base_dir is not None:
+            pipeline_config().set_replacement_base(self.base_dir)
         # essentially should just run NoCuration or Curated based on keys from an IngestionTask table
         # might even be able to just call PipelineInput directly with the pipeline_mode
         pass
@@ -71,6 +74,7 @@ class Minion(BaseModel, Runnable):
 class NoCuration(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.NO_CURATION] = PipelineMode.NO_CURATION
     scan_key: ScanKey
+    base_dir: Optional[Path] = None
     acq_software: str = ACQ_SOFTWARE
     insertion_number: int
     # Will ephys.InsertionLocation just be inserted into directly from 2pmaster?
@@ -93,6 +97,8 @@ class NoCuration(BaseModel, Runnable):
             raise ValueError(
                 "clustering_output_dir and clustering_output_suffix can't both have values"
             )
+        if self.base_dir is not None:
+            pipeline_config().set_replacement_base(self.base_dir)
 
         ### PreClustering
         logging.info("starting preclustering section")
@@ -226,10 +232,14 @@ class NoCuration(BaseModel, Runnable):
 class Curated(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.CURATED] = PipelineMode.CURATED
     scan_key: ScanKey
+    base_dir: Optional[Path] = None
     curation_input: clustering.CurationInput
 
     def run(self, **populate_kwargs):
         """Ingesting curated results"""
+        if self.base_dir is not None:
+            pipeline_config().set_replacement_base(self.base_dir)
+
         ### Curation Ingestion
         clustering_source_key = ephys.ClusteringTask.build_key_from_scan(
             self.scan_key.model_dump(), self.insertion_number, self.clustering_method
