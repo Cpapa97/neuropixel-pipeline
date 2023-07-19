@@ -63,8 +63,8 @@ class UnitArea(dj.Manual):
     def fill(
         cls,
         scan_key: dict,
-        insertion_number: int,
-        paramset_idx: int,
+        insertion_id: int,
+        paramset_id: int,
         curation_id: int,
         segmentation_method: str,
         unit_id: int,
@@ -72,9 +72,9 @@ class UnitArea(dj.Manual):
     ):
         cls.insert1(
             dict(
-                session_id=ephys.Session.get_session_id(scan_key),
-                insertion_number=insertion_number,
-                paramset_idx=paramset_idx,
+                inc_id=ephys.Session.get_id(scan_key),
+                insertion_id=insertion_id,
+                paramset_id=paramset_id,
                 curation_id=curation_id,
                 segmentation_method=segmentation_method,
                 unit_id=unit_id,

@@ -10,11 +10,10 @@ from neuropixel_pipeline.api.postclustering import QualityMetricsRunner
 from . import probe
 from .. import utils
 from .config import pipeline_config
-from ..api.metadata import InsertionData
 from ..readers import labview, kilosort
 
 
-schema = dj.schema("neuropixel_ephys")
+schema = dj.schema("neuropixel_ephys_test")
 
 
 ### ----------------------------- Table declarations ----------------------
@@ -23,16 +22,47 @@ schema = dj.schema("neuropixel_ephys")
 
 
 @schema
+class ProbeInsertion(dj.Manual):
+    """Information about probe insertion across subjects and sessions."""
+
+    definition = """
+    # Probe insertion implanted into an animal for a given session.
+    animal_id : int
+    insertion_id: int
+    """
+
+    class Probe(dj.Part):
+        definition = """
+        -> master
+        ---
+        -> probe.Probe
+        """
+
+    class Location(dj.Part):
+        definition = """
+        -> master
+        ---
+        -> SkullReference
+        ap_location: decimal(6, 2) # (um) anterior-posterior; ref is 0; more anterior is more positive
+        ml_location: decimal(6, 2) # (um) medial axis; ref is 0; more right is more positive
+        depth:       decimal(6, 2) # (um) manipulator depth relative to surface of the brain (0); more ventral is more negative
+        theta=null:  decimal(5, 2) # (deg) - elevation - rotation about the ml-axis [0, 180] - w.r.t the z+ axis
+        phi=null:    decimal(5, 2) # (deg) - azimuth - rotation about the dv-axis [0, 360] - w.r.t the x+ axis
+        beta=null:   decimal(5, 2) # (deg) rotation about the shank of the probe [-180, 180] - clockwise is increasing in degree - 0 is the probe-front facing anterior
+        """
+
+
+@schema
 class Session(dj.Manual):
     """Session key"""
 
     definition = """
     # Session: table connection
-    session_id : int # Session primary key
+    inc_id: int # incremental encompassing session inc_id
     ---
-    animal_id=null: int unsigned # animal id
-    session=null: smallint unsigned # original session id
-    scan_idx=null: smallint unsigned # scan idx
+    animal_id: int # original animal id
+    session_id: int # original session id
+    scan_id: smallint unsigned # original scan id
     rig='': varchar(60) # recording rig
     timestamp=CURRENT_TIMESTAMP: timestamp # timestamp when this session was inserted
     """
@@ -42,8 +72,8 @@ class Session(dj.Manual):
         if not cls & session_meta:
             # Synthesize session id, auto_increment cannot be used here if it's used later
             # Additionally this does make it more difficult to accidentally add two of the same session
-            session_id = dj.U().aggr(cls, n="ifnull(max(session_id)+1,1)").fetch1("n")
-            session_meta["session_id"] = session_id
+            inc_id = dj.U().aggr(cls, n="ifnull(max(inc_id)+1,1)").fetch1("n")
+            session_meta["inc_id"] = inc_id
             cls.insert1(
                 session_meta
             )  # should just hash as the primary key and put the rest as a longblob?
@@ -53,11 +83,11 @@ class Session(dj.Manual):
             pass
 
     @classmethod
-    def get_session_id(cls, scan_key: dict, rel=False):
+    def get_id(cls, scan_key: dict, rel=False):
         if rel:
             return (cls & scan_key).proj()
         else:
-            return (cls & scan_key).fetch1("session_id")
+            return (cls & scan_key).fetch1("inc_id")
 
 
 @schema
@@ -82,54 +112,12 @@ class AcquisitionSoftware(dj.Lookup):
 
 
 @schema
-class ProbeInsertion(dj.Manual):
-    """Information about probe insertion across subjects and sessions."""
-
-    definition = """
-    # Probe insertion implanted into an animal for a given session.
-    -> Session
-    insertion_number: tinyint unsigned
-    ---
-    -> probe.Probe
-    """
-
-
-@schema
-class InsertionLocation(dj.Manual):
-    """Stereotaxic location information for each probe insertion."""
-
-    definition = """
-    # Brain Location of a given probe insertion.
-    -> ProbeInsertion
-    ---
-    -> SkullReference
-    ap_location: decimal(6, 2) # (um) anterior-posterior; ref is 0; more anterior is more positive
-    ml_location: decimal(6, 2) # (um) medial axis; ref is 0 ; more right is more positive
-    depth:       decimal(6, 2) # (um) manipulator depth relative to surface of the brain (0); more ventral is more negative
-    theta=null:  decimal(5, 2) # (deg) - elevation - rotation about the ml-axis [0, 180] - w.r.t the z+ axis
-    phi=null:    decimal(5, 2) # (deg) - azimuth - rotation about the dv-axis [0, 360] - w.r.t the x+ axis
-    beta=null:   decimal(5, 2) # (deg) rotation about the shank of the probe [-180, 180] - clockwise is increasing in degree - 0 is the probe-front facing anterior
-    """
-
-    @classmethod
-    @validate_call
-    def fill(cls, scan_key: dict, insertion_number: int, data: InsertionData):
-        cls.insert1(
-            dict(
-                session_id=Session.get_session_id(scan_key),
-                insertion_number=insertion_number,
-                **data.model_dump(),
-            )
-        )
-
-
-@schema
 class EphysFile(dj.Manual):
     """Paths for ephys sessions"""
 
     definition = """
     # Paths for ephys sessions
-    -> ProbeInsertion
+    -> Session
     ---
     session_path: varchar(255) # file path or directory for an ephys session
     -> AcquisitionSoftware
@@ -142,7 +130,7 @@ class EphysRecording(dj.Imported):
 
     definition = """
     # Ephys recording from a probe insertion for a given session.
-    -> ProbeInsertion
+    -> Session
     ---
     -> probe.ElectrodeConfig
     sampling_rate: float # (Hz)
@@ -359,7 +347,7 @@ class ClusteringParamSet(dj.Lookup):
 
     definition = """
     # Parameter set to be used in a clustering procedure
-    paramset_idx:  smallint
+    paramset_id:  smallint
     ---
     -> ClusteringMethod
     paramset_desc: varchar(128)
@@ -376,11 +364,11 @@ class ClusteringParamSet(dj.Lookup):
         description: str = "",
         skip_duplicates=False,
     ):
-        paramset_idx = dj.U().aggr(cls, n="ifnull(max(paramset_idx)+1,1)").fetch1("n")
+        paramset_id = dj.U().aggr(cls, n="ifnull(max(paramset_id)+1,1)").fetch1("n")
         params_uuid = utils.dict_to_uuid(params)
         cls.insert1(
             dict(
-                paramset_idx=paramset_idx,
+                paramset_id=paramset_id,
                 clustering_method=clustering_method,
                 paramset_desc=description,
                 paramset_hash=params_uuid,
@@ -423,14 +411,14 @@ class ClusteringTask(dj.Manual):
 
     @classmethod
     def build_key_from_scan(
-        cls, scan_key: dict, insertion_number: int, clustering_method: str, fetch=False
+        cls, scan_key: dict, insertion_id: int, clustering_method: str, fetch=False
     ) -> dict:
         task_key = dict(
-            session_id=(Session & scan_key).fetch1("session_id"),
-            insertion_number=insertion_number,
-            paramset_idx=(
+            inc_id=(Session & scan_key).fetch1("inc_id"),
+            insertion_id=insertion_id,
+            paramset_id=(
                 ClusteringParamSet & {"clustering_method": clustering_method}
-            ).fetch1("paramset_idx"),
+            ).fetch1("paramset_id"),
         )
         if fetch:
             return (cls & task_key).fetch()

@@ -37,6 +37,7 @@ class PipelineMode(str, Enum):
     MINION = "minion"
     NO_CURATION = "no curation"
     CURATED = "curated"
+    INSERTION_META = "insertion meta"
 
 
 class Setup(BaseModel, Runnable):
@@ -76,9 +77,6 @@ class NoCuration(BaseModel, Runnable):
     scan_key: ScanKey
     base_dir: Optional[Path] = None
     acq_software: str = ACQ_SOFTWARE
-    insertion_number: int
-    # Will ephys.InsertionLocation just be inserted into directly from 2pmaster?
-    insertion_location: Optional[metadata.InsertionData] = None
     clustering_method: str = DEFAULT_CLUSTERING_METHOD
     clustering_task_mode: clustering_task.ClusteringTaskMode = (
         clustering_task.ClusteringTaskMode.TRIGGER
@@ -110,33 +108,18 @@ class NoCuration(BaseModel, Runnable):
             self.scan_key, include_generic=True
         )
 
-        labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
-
-        session_id = (ephys.Session & session_meta).fetch1("session_id")
-        insertion_key = dict(
-            session_id=session_id, insertion_number=self.insertion_number
-        )
-
-        ephys.ProbeInsertion.insert1(
-            dict(
-                **insertion_key,
-                probe=labview_metadata.serial_number,
-            ),
-            skip_duplicates=True,
-        )
-
-        if self.insertion_location is not None:
-            ephys.InsertionLocation.insert(self.insertion_location.model_dict())
+        inc_id = (ephys.Session & session_meta).fetch1("inc_id")
+        session_key = dict(inc_id=inc_id)
 
         ephys.EphysFile.insert1(
             dict(
-                **insertion_key,
+                **session_key,
                 session_path=generic_path,
                 acq_software=ACQ_SOFTWARE,
             ),
             skip_duplicates=True,
         )
-        session_restriction = dict(**insertion_key)
+        session_restriction = dict(**session_key)
         ephys.EphysRecording.populate(session_restriction, **populate_kwargs)
 
         # ephys.LFP.populate(session_restriction, **populate_kwargs)  # This isn't implemented yet
@@ -169,13 +152,13 @@ class NoCuration(BaseModel, Runnable):
                         clustering_output_dir /= part
                 self.clustering_output_dir = clustering_output_dir
 
-        paramset_idx = (
+        paramset_id = (
             ephys.ClusteringParamSet & {"clustering_method": self.clustering_method}
-        ).fetch1("paramset_idx")
+        ).fetch1("paramset_id")
         ephys.ClusteringTask.insert1(
             dict(
-                **insertion_key,
-                paramset_idx=paramset_idx,
+                **session_key,
+                paramset_id=paramset_id,
                 clustering_output_dir=self.clustering_output_dir,
                 task_mode=self.clustering_task_mode.value,
             ),
@@ -186,7 +169,7 @@ class NoCuration(BaseModel, Runnable):
             from ...readers.labview import NEUROPIXEL_PREFIX
 
             clustering_params = (
-                (ephys.ClusteringParamSet & {"paramset_idx": paramset_idx})
+                (ephys.ClusteringParamSet & {"paramset_id": paramset_id})
                 .fetch("params")
                 .item()
             )
@@ -201,12 +184,12 @@ class NoCuration(BaseModel, Runnable):
             logging.info("attempting to trigger kilosort clustering")
             task_runner.trigger_clustering(self.check_for_existing_kilosort_results)
             logging.info("done with kilosort clustering")
-        session_restriction["paramset_idx"] = paramset_idx
+        session_restriction["paramset_id"] = paramset_id
         ephys.Clustering.populate(session_restriction, **populate_kwargs)
 
         ### Curation Ingestion
         clustering_source_key = ephys.ClusteringTask.build_key_from_scan(
-            self.scan_key.model_dump(), self.insertion_number, self.clustering_method
+            self.scan_key.model_dump(), self.insertion_id, self.clustering_method
         )
         if self.curation_input.curation_output_dir is None:
             self.curation_input.curation_output_dir = (
@@ -242,7 +225,7 @@ class Curated(BaseModel, Runnable):
 
         ### Curation Ingestion
         clustering_source_key = ephys.ClusteringTask.build_key_from_scan(
-            self.scan_key.model_dump(), self.insertion_number, self.clustering_method
+            self.scan_key.model_dump(), self.insertion_id, self.clustering_method
         )
         if self.curation_input.curation_output_dir is None:
             self.curation_input.curation_output_dir = (
@@ -255,9 +238,8 @@ class Curated(BaseModel, Runnable):
             ),
         )
         session_restriction = {
-            "session_id": clustering_source_key["session_id"],
-            "insertion_number": clustering_source_key["insertion_number"],
-            "paramset_idx": clustering_source_key["paramset_idx"],
+            "inc_id": clustering_source_key["inc_id"],
+            "paramset_id": clustering_source_key["paramset_id"],
             "curation_id": curation_id,
         }
         ephys.CuratedClustering.populate(session_restriction, **populate_kwargs)
@@ -269,14 +251,44 @@ class Curated(BaseModel, Runnable):
         logging.info("done with post-clustering section")
 
 
+class InsertionMeta(BaseModel, Runnable):
+    pipeline_mode: Literal[PipelineMode.INSERTION_META] = PipelineMode.INSERTION_META
+    scan_key: ScanKey
+    session_base: Optional[Path] = None
+    insertion_id: int
+    insertion_location: Optional[metadata.InsertionData] = None
+
+    def run(self):
+        """Insertion data"""
+        if self.base_dir is not None:
+            pipeline_config().set_replacement_base(self.base_dir)
+
+        session_path = get_session_path(self.scan_key)
+        labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
+        insertion_key = dict(
+            animal_id=self.scan_key.animal_id, insertion_id=self.insertion_id
+        )
+        ephys.ProbeInsertion.insert1(
+            dict(
+                **insertion_key,
+                probe=labview_metadata.serial_number,
+            ),
+            skip_duplicates=True,
+        )
+
+        if self.insertion_location is not None:
+            ephys.InsertionLocation.insert(self.insertion_location.model_dict())
+
+
 class PipelineInput(BaseModel, Runnable):
-    params: Union[Setup, Minion, NoCuration, Curated] = Field(
+    params: Union[Setup, Minion, NoCuration, Curated, InsertionMeta] = Field(
         discriminator="pipeline_mode"
     )
     populate_kwargs: dict = {}  # {"reserve_jobs": True}
 
     def run(self):
         logging.info("starting neuropixel pipeline")
+        logging.info(f"running in {self.params.pipeline_mode} mode")
         start_time = time.time()
 
         results = self.params.run(
@@ -284,5 +296,7 @@ class PipelineInput(BaseModel, Runnable):
         )
 
         elapsed_time = round(time.time() - start_time, 2)
-        logging.info(f"done with neuropixel pipeline, elapsed_time: {elapsed_time}")
+        logging.info(
+            f"done with neuropixel pipeline, in mode {self.params.pipeline_mode}, elapsed_time: {elapsed_time}"
+        )
         return results
