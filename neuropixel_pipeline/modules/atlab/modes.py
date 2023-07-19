@@ -277,7 +277,7 @@ class InsertionMeta(BaseModel, Runnable):
         )
 
         if self.insertion_location is not None:
-            ephys.InsertionLocation.insert(self.insertion_location.model_dict())
+            ephys.ProbeInsertion.Location.insert(self.insertion_location.model_dict())
 
 
 class PipelineInput(BaseModel, Runnable):
