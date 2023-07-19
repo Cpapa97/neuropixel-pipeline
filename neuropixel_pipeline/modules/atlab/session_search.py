@@ -5,7 +5,7 @@ from ...schemata.config import pipeline_config
 
 
 def get_generic_session_path(scan_key: ScanKey):
-    scan_key = ScanKey.model_validate(scan_key).model_dump()
+    scan_key = ScanKey.model_validate(scan_key).model_dump(by_alias=True)
 
     import datajoint as dj
 
