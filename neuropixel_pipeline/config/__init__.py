@@ -9,7 +9,7 @@ class PipelineConfig(BaseModel):
     use_global_config: bool = False
     generic_directory_suffix: Optional[GenericDirectory] = None
 
-    @validate_call
+    # @validate_call
     def set_replacement_base(self, base_dir: Path):
         if self.generic_directory_suffix is not None:
             self.generic_directory_suffix.replacement = base_dir
@@ -18,7 +18,7 @@ class PipelineConfig(BaseModel):
                 "no self.generic_directory_suffix is set and missing self.generic_directory_suffix.`generic`"
             )
 
-    @validate_call
+    # @validate_call
     def specify(self, path: Path) -> Path:
         path = Path(path)
         if self.generic_directory_suffix is not None:

@@ -13,7 +13,7 @@ class GenericDirectory(BaseModel):
         description="leave as None if the replacement path must be set by each process"
     )
 
-    @validate_call
+    # @validate_call
     def specify(self, generic_path: Path) -> Path:
         if self.replacement is None:
             raise ValueError("self.replacement cannot be None for this method")
