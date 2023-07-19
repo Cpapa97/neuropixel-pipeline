@@ -22,6 +22,16 @@ schema = dj.schema("neuropixel_ephys_test")
 
 
 @schema
+class SkullReference(dj.Lookup):
+    """Reference area from the skull"""
+
+    definition = """
+    skull_reference   : varchar(60)
+    """
+    contents = zip(["Bregma", "Lambda"])
+
+
+@schema
 class ProbeInsertion(dj.Manual):
     """Information about probe insertion across subjects and sessions."""
 
@@ -88,16 +98,6 @@ class Session(dj.Manual):
             return (cls & scan_key).proj()
         else:
             return (cls & scan_key).fetch1("inc_id")
-
-
-@schema
-class SkullReference(dj.Lookup):
-    """Reference area from the skull"""
-
-    definition = """
-    skull_reference   : varchar(60)
-    """
-    contents = zip(["Bregma", "Lambda"])
 
 
 @schema
