@@ -281,12 +281,14 @@ class InsertionMeta(BaseModel, Runnable):
             session_path = get_session_path(self.scan_key)
             labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
             ephys.ProbeInsertion.Probe.insert1(
-                dict(**insertion_key, probe=labview_metadata.serial_number)
+                dict(**insertion_key, probe=labview_metadata.serial_number),
+                skip_duplicates=True,
             )
 
         if self.insertion_location is not None:
             ephys.ProbeInsertion.Location.insert1(
-                dict(**insertion_key, **self.insertion_location.model_dict())
+                dict(**insertion_key, **self.insertion_location.model_dict()),
+                skip_duplicates=True,
             )
 
 

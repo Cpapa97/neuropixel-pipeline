@@ -1,5 +1,6 @@
 from .common import ScanKey
 
+
 def get_rig(scan_key: ScanKey):
     import datajoint as dj
 
