@@ -144,7 +144,7 @@ class EphysRecording(dj.Imported):
         acq_software = ephys_file_data["acq_software"]
         session_path = pipeline_config().specify(ephys_file_data["session_path"])
 
-        inserted_probe_serial_number = (ProbeInsertion * probe.Probe & key).fetch1(
+        inserted_probe_serial_number = (ProbeInsertion.Probe * probe.Probe & key).fetch1(
             "probe"
         )
 
@@ -207,7 +207,7 @@ class LFP(dj.Imported):
 
     def make(self, key):
         """Populates the LFP tables."""
-        recording_meta = (EphysFile * ProbeInsertion & key).fetch()
+        recording_meta = (EphysFile & key).fetch()
         acq_software = recording_meta["acq_software"]
 
         electrode_keys, lfp = [], []
@@ -579,7 +579,7 @@ class CuratedClustering(dj.Imported):
             "electrode_config_hash"
         )
 
-        serial_number = dj.U("probe") & (ProbeInsertion & key)
+        serial_number = dj.U("probe") & (ProbeInsertion.Probe & key)
         probe_type = (probe.Probe & serial_number).fetch1("probe_type")
 
         # -- Insert unit, label, peak-chn
