@@ -254,7 +254,7 @@ class Curated(BaseModel, Runnable):
 class InsertionMeta(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.INSERTION_META] = PipelineMode.INSERTION_META
     scan_key: ScanKey
-    session_base: Optional[Path] = None
+    base_dir: Optional[Path] = None
     insertion_id: int
     insertion_location: Optional[metadata.InsertionData] = None
 
