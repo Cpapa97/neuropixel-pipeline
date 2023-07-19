@@ -144,9 +144,9 @@ class EphysRecording(dj.Imported):
         acq_software = ephys_file_data["acq_software"]
         session_path = pipeline_config().specify(ephys_file_data["session_path"])
 
-        inserted_probe_serial_number = (ProbeInsertion.Probe * probe.Probe & key).fetch1(
-            "probe"
-        )
+        inserted_probe_serial_number = (
+            ProbeInsertion.Probe * probe.Probe & key
+        ).fetch1("probe")
 
         if acq_software == "LabviewV1":
             labview_meta = labview.LabviewNeuropixelMeta.from_h5(session_path)
@@ -411,11 +411,10 @@ class ClusteringTask(dj.Manual):
 
     @classmethod
     def build_key_from_scan(
-        cls, scan_key: dict, insertion_id: int, clustering_method: str, fetch=False
+        cls, scan_key: dict, clustering_method: str, fetch=False
     ) -> dict:
         task_key = dict(
             inc_id=(Session & scan_key).fetch1("inc_id"),
-            insertion_id=insertion_id,
             paramset_id=(
                 ClusteringParamSet & {"clustering_method": clustering_method}
             ).fetch1("paramset_id"),

@@ -189,7 +189,7 @@ class NoCuration(BaseModel, Runnable):
 
         ### Curation Ingestion
         clustering_source_key = ephys.ClusteringTask.build_key_from_scan(
-            self.scan_key.model_dump(), self.insertion_id, self.clustering_method
+            self.scan_key.model_dump(), self.clustering_method
         )
         if self.curation_input.curation_output_dir is None:
             self.curation_input.curation_output_dir = (
@@ -216,6 +216,7 @@ class Curated(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.CURATED] = PipelineMode.CURATED
     scan_key: ScanKey
     base_dir: Optional[Path] = None
+    clustering_method: str = DEFAULT_CLUSTERING_METHOD
     curation_input: clustering.CurationInput
 
     def run(self, **populate_kwargs):
@@ -225,7 +226,7 @@ class Curated(BaseModel, Runnable):
 
         ### Curation Ingestion
         clustering_source_key = ephys.ClusteringTask.build_key_from_scan(
-            self.scan_key.model_dump(), self.insertion_id, self.clustering_method
+            self.scan_key.model_dump(), self.clustering_method
         )
         if self.curation_input.curation_output_dir is None:
             self.curation_input.curation_output_dir = (
