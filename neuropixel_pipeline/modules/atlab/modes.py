@@ -254,30 +254,40 @@ class Curated(BaseModel, Runnable):
 class InsertionMeta(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.INSERTION_META] = PipelineMode.INSERTION_META
     scan_key: ScanKey
-    base_dir: Optional[Path] = None
+    base_dir: Union[Optional[Path], Literal[False]] = Field(
+        None,
+        description="If set to False, will disable finding the probe serial number entirely",
+    )
     insertion_id: int
     insertion_location: Optional[metadata.InsertionData] = None
 
     def run(self):
         """Insertion data"""
+        find_probe = True
+        if self.base_dir is False:
+            find_probe = False
         if self.base_dir is not None:
             pipeline_config().set_replacement_base(self.base_dir)
 
-        session_path = get_session_path(self.scan_key)
-        labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
         insertion_key = dict(
             animal_id=self.scan_key.animal_id, insertion_id=self.insertion_id
         )
         ephys.ProbeInsertion.insert1(
-            dict(
-                **insertion_key,
-                probe=labview_metadata.serial_number,
-            ),
+            insertion_key,
             skip_duplicates=True,
         )
 
+        if find_probe:
+            session_path = get_session_path(self.scan_key)
+            labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
+            ephys.ProbeInsertion.Probe.insert1(
+                dict(**insertion_key, probe=labview_metadata.serial_number)
+            )
+
         if self.insertion_location is not None:
-            ephys.ProbeInsertion.Location.insert(self.insertion_location.model_dict())
+            ephys.ProbeInsertion.Location.insert1(
+                dict(**insertion_key, **self.insertion_location.model_dict())
+            )
 
 
 class PipelineInput(BaseModel, Runnable):
