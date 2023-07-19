@@ -266,8 +266,6 @@ class InsertionMeta(BaseModel, Runnable):
         find_probe = True
         if self.base_dir is False:
             find_probe = False
-        if self.base_dir is not None:
-            pipeline_config().set_replacement_base(self.base_dir)
 
         insertion_key = dict(
             animal_id=self.scan_key.animal_id, insertion_id=self.insertion_id
@@ -278,6 +276,8 @@ class InsertionMeta(BaseModel, Runnable):
         )
 
         if find_probe:
+            if self.base_dir is not None:
+                pipeline_config().set_replacement_base(self.base_dir)
             session_path = get_session_path(self.scan_key)
             labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
             ephys.ProbeInsertion.Probe.insert1(
