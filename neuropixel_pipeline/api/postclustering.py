@@ -67,7 +67,9 @@ class WaveformMetricsRunner(BaseModel):
             default=16, description="Number of sites to use for 2D waveform metrics"
         )
 
-    def calculate(self, kilosort_output_dir: Path, bin_file: Path, has_sync_channel=False):
+    def calculate(
+        self, kilosort_output_dir: Path, bin_file: Path, has_sync_channel=False
+    ):
         ### Calculating waveform metrics required reimplementing calculate_mean_waveforms
         ### This is because it directly accesses data (which requires a channel count of 384)
         ### But we have an extra sync channel, so that needs to be handled on our side instead.
@@ -81,7 +83,6 @@ class WaveformMetricsRunner(BaseModel):
         kilosort_output_dir = Path(kilosort_output_dir)
         mean_waveforms_file = kilosort_output_dir / MEAN_WAVEFORMS_FILE
         waveform_metrics_file = kilosort_output_dir / WAVEFORM_METRICS_FILE
-
 
         print("ecephys spike sorting: mean waveforms module")
 
