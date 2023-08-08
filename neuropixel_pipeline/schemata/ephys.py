@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from pydantic import validate_call
 import datajoint as dj
 import numpy as np
 
-from neuropixel_pipeline.api.postclustering import QualityMetricsRunner
+from neuropixel_pipeline.api.postclustering import (
+    WaveformMetricsRunner,
+    QualityMetricsRunner,
+    MEAN_WAVEFORMS_FILE,
+    QUALITY_METRICS_FILE,
+)
 from . import probe
 from .. import utils
 from .config import pipeline_config
@@ -623,6 +629,117 @@ class CuratedClustering(dj.Imported):
         self.Unit.insert(insert_units)
 
 
+# important to note the original source of these quality metrics:
+#   https://allensdk.readthedocs.io/en/latest/
+#   https://github.com/AllenInstitute/ecephys_spike_sorting
+#
+@schema
+class WaveformSet(dj.Imported):
+    """A set of spike waveforms for units out of a given CuratedClustering."""
+
+    definition = """
+    # A set of spike waveforms for units out of a given CuratedClustering
+    -> CuratedClustering
+    """
+
+    class PeakWaveform(dj.Part):
+        """Mean waveform across spikes for a given unit."""
+
+        definition = """
+        # Mean waveform across spikes for a given unit at its representative electrode
+        -> master
+        -> CuratedClustering.Unit
+        ---
+        peak_electrode_waveform: longblob  # (uV) mean waveform for a given unit at its representative electrode
+        """
+
+    class Waveform(dj.Part):
+        """Spike waveforms for a given unit."""
+
+        definition = """
+        # Spike waveforms and their mean across spikes for the given unit
+        -> master
+        -> CuratedClustering.Unit
+        -> probe.ElectrodeConfig.Electrode
+        ---
+        waveform_mean: longblob   # (uV) mean waveform across spikes of the given unit
+        """
+
+    def make(self, key):
+        """Populates waveform tables."""
+        curation_output_dir = Path((Curation & key).fetch1("curation_output_dir"))
+
+        kilosort_dataset = kilosort.Kilosort(curation_output_dir)
+
+        # -- Get channel and electrode-site mapping
+        recording_key = (EphysRecording & key).fetch1("KEY")
+
+        def channel2electrodes(ephys_recording_key):
+            electrode_query = (
+                probe.ProbeType.Electrode
+                * probe.ElectrodeConfig.Electrode
+                * EphysRecording
+                & ephys_recording_key
+            )
+
+            probe_electrodes = {
+                key["electrode"]: key for key in electrode_query.fetch("KEY")
+            }
+
+            return probe_electrodes
+
+        probe_electrodes = channel2electrodes(recording_key)
+
+        # Get all units
+        units = {
+            u["unit"]: u
+            for u in (CuratedClustering.Unit & key).fetch(as_dict=True, order_by="unit")
+        }
+
+        mean_waveform_fp = curation_output_dir / MEAN_WAVEFORMS_FILE
+        if not mean_waveform_fp.exists():
+            print("Constructing mean waveforms files")
+            results = WaveformMetricsRunner().calculate(mean_waveform_fp)
+            print(f"WaveformMetricsRunner results: {results}")
+
+        unit_waveforms = np.load(mean_waveform_fp)  # unit x channel x sample
+
+        def yield_unit_waveforms():
+            for unit_no, unit_waveform in zip(
+                kilosort_dataset.data["cluster_ids"], unit_waveforms
+            ):
+                unit_peak_waveform = {}
+                unit_electrode_waveforms = []
+                if unit_no in units:
+                    for channel, channel_waveform in zip(
+                        kilosort_dataset.data["channel_map"], unit_waveform
+                    ):
+                        unit_electrode_waveforms.append(
+                            {
+                                **units[unit_no],
+                                **probe_electrodes[channel],
+                                "waveform_mean": channel_waveform,
+                            }
+                        )
+                        if (
+                            probe_electrodes[channel]["electrode"]
+                            == units[unit_no]["electrode"]
+                        ):
+                            unit_peak_waveform = {
+                                **units[unit_no],
+                                "peak_electrode_waveform": channel_waveform,
+                            }
+                yield unit_peak_waveform, unit_electrode_waveforms
+
+        # insert waveform on a per-unit basis to mitigate potential memory issue (might not be an issue when not sampling waveforms)
+        self.insert1(key)
+        for unit_peak_waveform, unit_electrode_waveforms in yield_unit_waveforms():
+            if unit_peak_waveform:
+                self.PeakWaveform.insert1(unit_peak_waveform, ignore_extra_fields=True)
+            if unit_electrode_waveforms:
+                self.Waveform.insert(unit_electrode_waveforms, ignore_extra_fields=True)
+
+
 # note the original source of these quality metric calculations:
 #   https://allensdk.readthedocs.io/en/latest/
 #   https://github.com/AllenInstitute/ecephys_spike_sorting
@@ -659,7 +776,7 @@ class QualityMetrics(dj.Imported):
             (Curation & key).fetch1("curation_output_dir")
         )
 
-        metric_fp = curation_output_dir / "metrics.csv"
+        metric_fp = curation_output_dir / QUALITY_METRICS_FILE
         rename_dict = {
             "isi_viol": "isi_violation",
             "num_viol": "number_violation",  # TODO: not calculated directly by AllenInstitute ecephys_spike_sorting
