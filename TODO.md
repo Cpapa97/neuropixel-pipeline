@@ -1,1 +1,4 @@
-- [ ] Move all lab specific differences (that are in the schema populates) to a pipeline config model and table
+TODO:
+- [X] Waveform Metrics
+- [ ] Review Promote-ProbeInsertion branch.
+- [ ] Switch to external blobs to finalize the schemas.
