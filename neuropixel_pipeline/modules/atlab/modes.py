@@ -22,7 +22,7 @@ from ...api import metadata, clustering, clustering_task
 from ...api.clustering_task import ClusteringTaskMode, ClusteringTaskRunner
 from ...readers.labview import LabviewNeuropixelMeta
 from ...utils import check_for_first_bin_with_prefix
-from ...schemata import probe, ephys
+from ...schemata import probe, ephys, minion
 from ...schemata.config import PipelineConfigStore, pipeline_config
 
 
@@ -61,14 +61,21 @@ class Setup(BaseModel, Runnable):
 
 class Minion(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.MINION] = PipelineMode.MINION
-    base_dir: Optional[Path] = None
 
     def run(self, **populate_kwargs):
-        if self.base_dir is not None:
-            pipeline_config().set_replacement_base(self.base_dir)
-        # essentially should just run NoCuration or Curated based on keys from an IngestionTask table
-        # might even be able to just call PipelineInput directly with the pipeline_mode
-        pass
+        def check_and_populate(self, key):
+            """Drop-in replacement for minion.MinionOutput.make"""
+            params = (minion.MinionInput & key).fetch1("params")
+            pipeline = PipelineInput.model_validate(params)
+            if pipeline.pipeline_mode is PipelineMode.MINION:
+                raise ValueError(
+                    "PipelineMode.MINION should NOT be an input to the MinionInput table, " \
+                    "it is only used by the pipeline minion internally"
+                )
+            pipeline.run()
+
+        minion.MinionOutput.make = check_and_populate
+        minion.MinionOutput.populate(**populate_kwargs)
 
 
 class NoCuration(BaseModel, Runnable):

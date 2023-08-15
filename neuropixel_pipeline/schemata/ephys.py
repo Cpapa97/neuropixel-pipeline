@@ -15,12 +15,13 @@ from neuropixel_pipeline.api.postclustering import (
 )
 from . import probe
 from .. import utils
+from . import SCHEMA_PREFIX
 from .config import pipeline_config
 from ..api.metadata import InsertionData
 from ..readers import labview, kilosort
 
 
-schema = dj.schema("neuropixel_ephys")
+schema = dj.schema(SCHEMA_PREFIX + "ephys")
 
 
 ### ----------------------------- Table declarations ----------------------

@@ -88,4 +88,4 @@ spec:
                 git clone https://github.com/atlab/neuropixel-pipeline.git &&\
                 cd neuropixel-pipeline; \
                 conda run --no-capture-output -n kilosort python -m pip install -e . &&\
-                conda run --no-capture-output -n kilosort python -m neuropixel-pipeline.modules.atlab {"params": {"pipeline_mode": "minion"}}']
+                conda run --no-capture-output -n kilosort python -m neuropixel-pipeline.modules.atlab {"params": {"pipeline_mode": "minion"}, "populate_kwargs": {"reserve_jobs": true, "suppress_errors": true}}']

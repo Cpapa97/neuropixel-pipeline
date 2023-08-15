@@ -12,17 +12,10 @@ import numpy as np
 
 from neuropixel_pipeline.readers import labview
 
+from . import SCHEMA_PREFIX
 from ..api.metadata import NeuropixelConfig
 
-schema = dj.schema("neuropixel_probe")
-
-
-def run_populate():
-    # possibly temporary way of populating these values
-    ProbeType.fill_neuropixel_probes()
-
-    # Probe and ElectrodeConfig(/.Electrode) don't currently have fill methods
-    pass
+schema = dj.schema(SCHEMA_PREFIX + "probe")
 
 
 @schema

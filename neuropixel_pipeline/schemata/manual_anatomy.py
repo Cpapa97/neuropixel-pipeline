@@ -1,7 +1,8 @@
 from . import ephys
+from . import SCHEMA_PREFIX
 import datajoint as dj
 
-schema = dj.schema("neuropixel_manual_anatomy")
+schema = dj.schema(SCHEMA_PREFIX + "manual_anatomy")
 
 
 @schema

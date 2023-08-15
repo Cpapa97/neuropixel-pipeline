@@ -5,10 +5,11 @@ from __future__ import annotations
 import datajoint as dj
 from pydantic import validate_call
 
+from . import SCHEMA_PREFIX
 from ..config import PipelineConfig, atlab
 
 
-schema = dj.schema("neuropixel_config")
+schema = dj.schema(SCHEMA_PREFIX + "config")
 
 
 def pipeline_config(name=None, use_global=None, override_global=False):
