@@ -556,8 +556,8 @@ class WaveformSet(dj.Imported):
 
         # Get all units
         units = {
-            u["unit"]: u
-            for u in (CuratedClustering.Unit & key).fetch(as_dict=True, order_by="unit")
+            u["unit_id"]: u
+            for u in (CuratedClustering.Unit & key).fetch(as_dict=True, order_by="unit_id")
         }
 
         mean_waveform_fp = curation_output_dir / MEAN_WAVEFORMS_FILE
