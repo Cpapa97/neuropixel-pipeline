@@ -25,3 +25,11 @@ class PipelineConfig(BaseModel):
             return self.generic_directory_suffix.specify(path)
         else:
             return path
+
+    # @validate_call
+    def unspecify(self, path: Path) -> Path:
+        path = Path(path)
+        if self.generic_directory_suffix is not None:
+            return self.generic_directory_suffix.specify(path)
+        else:
+            return path

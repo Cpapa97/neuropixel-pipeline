@@ -531,7 +531,7 @@ class WaveformSet(dj.Imported):
 
     def make(self, key):
         """Populates waveform tables."""
-        curation_output_dir = Path((Curation & key).fetch1("curation_output_dir"))
+        curation_output_dir = pipeline_config().specify((Curation & key).fetch1("curation_output_dir"))
 
         kilosort_dataset = kilosort.Kilosort(curation_output_dir)
 
