@@ -7,12 +7,6 @@ from pydantic import validate_call
 import datajoint as dj
 import numpy as np
 
-from neuropixel_pipeline.api.postclustering import (
-    WaveformMetricsRunner,
-    QualityMetricsRunner,
-    MEAN_WAVEFORMS_FILE,
-    QUALITY_METRICS_FILE,
-)
 from . import probe
 from .. import utils
 from . import SCHEMA_PREFIX
@@ -531,6 +525,11 @@ class WaveformSet(dj.Imported):
 
     def make(self, key):
         """Populates waveform tables."""
+        from neuropixel_pipeline.api.postclustering import (
+            WaveformMetricsRunner,
+            MEAN_WAVEFORMS_FILE,
+        )
+
         curation_output_dir = pipeline_config().specify((Curation & key).fetch1("curation_output_dir"))
 
         kilosort_dataset = kilosort.Kilosort(curation_output_dir)
@@ -635,6 +634,10 @@ class QualityMetrics(dj.Imported):
     def make(self, key):
         """Populates tables with quality metrics data."""
         import pandas as pd
+        from neuropixel_pipeline.api.postclustering import (
+            QualityMetricsRunner,
+            QUALITY_METRICS_FILE,
+        )
 
         curation_output_dir = pipeline_config().specify(
             (Curation & key).fetch1("curation_output_dir")
