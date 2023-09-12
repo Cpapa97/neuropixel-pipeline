@@ -575,7 +575,7 @@ class WaveformSet(dj.Imported):
                 generic_params=WaveformMetricsRunner.GenericParams(
                     bit_volts=labview_meta.scale[1]
                 )
-            ).calculate(mean_waveform_fp, bin_file=bin_file, has_sync_channel=True)
+            ).calculate(curation_output_dir, bin_file=bin_file, has_sync_channel=True)
             print(f"WaveformMetricsRunner results: {results}")
 
         unit_waveforms = np.load(mean_waveform_fp)  # unit x channel x sample
