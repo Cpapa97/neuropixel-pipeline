@@ -530,7 +530,9 @@ class WaveformSet(dj.Imported):
             MEAN_WAVEFORMS_FILE,
         )
 
-        curation_output_dir = pipeline_config().specify((Curation & key).fetch1("curation_output_dir"))
+        curation_output_dir = pipeline_config().specify(
+            (Curation & key).fetch1("curation_output_dir")
+        )
 
         kilosort_dataset = kilosort.Kilosort(curation_output_dir)
 
@@ -556,13 +558,22 @@ class WaveformSet(dj.Imported):
         # Get all units
         units = {
             u["unit_id"]: u
-            for u in (CuratedClustering.Unit & key).fetch(as_dict=True, order_by="unit_id")
+            for u in (CuratedClustering.Unit & key).fetch(
+                as_dict=True, order_by="unit_id"
+            )
         }
 
         mean_waveform_fp = curation_output_dir / MEAN_WAVEFORMS_FILE
         if not mean_waveform_fp.exists():
             print("Constructing mean waveforms files")
-            results = WaveformMetricsRunner().calculate(mean_waveform_fp)
+            labview_meta = labview.LabviewNeuropixelMeta.from_h5(
+                pipeline_config().specify((EphysFile & key).fetch1("session_path"))
+            )
+            results = WaveformMetricsRunner(
+                generic_params=WaveformMetricsRunner.GenericParams(
+                    bit_volts=labview_meta.scale[1]
+                )
+            ).calculate(mean_waveform_fp)
             print(f"WaveformMetricsRunner results: {results}")
 
         unit_waveforms = np.load(mean_waveform_fp)  # unit x channel x sample
