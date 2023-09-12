@@ -566,10 +566,10 @@ class WaveformSet(dj.Imported):
         mean_waveform_fp = curation_output_dir / MEAN_WAVEFORMS_FILE
         if not mean_waveform_fp.exists():
             print("Constructing mean waveforms files")
-            session_path = (EphysFile & key).fetch1("session_path")
-            labview_meta = labview.LabviewNeuropixelMeta.from_h5(
-                pipeline_config().specify(session_path)
+            session_path = pipeline_config().specify(
+                (EphysFile & key).fetch1("session_path")
             )
+            labview_meta = labview.LabviewNeuropixelMeta.from_h5(session_path)
             bin_file = labview_meta.find_bin_from_prefix(session_path)
             results = WaveformMetricsRunner(
                 generic_params=WaveformMetricsRunner.GenericParams(
