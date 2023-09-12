@@ -120,6 +120,16 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
             "This isn't implemented but is needed for neuropixel config generation"
         )
 
+    @staticmethod
+    def find_bin_from_prefix(
+        session_dir: Path,
+        prefix: str = NEUROPIXEL_PREFIX,
+    ):
+        return utils.check_for_first_bin_with_prefix(
+            session_dir=session_dir,
+            prefix=prefix,
+        )
+
 
 class LabviewBin(BaseModel):
     bin_path: Path
@@ -135,21 +145,3 @@ class LabviewBin(BaseModel):
                 prefix=prefix,
             )
         )
-
-    @staticmethod
-    def extract_lfp_metrics(
-        self,
-        microvolt_conversion_factor: float,
-        num_channels=384,
-        has_sync_channel=True,
-    ) -> lfp.LfpMetrics:
-        data = utils.extract_data_from_bin(
-            bin_file=self.bin_path,
-            num_channels=num_channels,
-            has_sync_channel=has_sync_channel,
-        )
-        # TODO: calculate lfp metrics
-        raise NotImplementedError(
-            f"lfp not implemented yet for LabviewV1: here's the data though: {data}"
-        )
-        return lfp.LfpMetrics()
