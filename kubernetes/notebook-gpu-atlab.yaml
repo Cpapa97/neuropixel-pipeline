@@ -37,8 +37,10 @@ spec:
         requests:
           cpu: "1"
           memory: "64Gi"
+          ephemeral-storage: "4Gi"
         limits:
           nvidia.com/gpu: "1"
+          ephemeral-storage: "8Gi"
       env:
         - name: DJ_HOST
           valueFrom:
