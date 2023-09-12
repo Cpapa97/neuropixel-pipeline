@@ -69,7 +69,7 @@ class Minion(BaseModel, Runnable):
             pipeline = PipelineInput.model_validate(params)
             if pipeline.pipeline_mode is PipelineMode.MINION:
                 raise ValueError(
-                    "PipelineMode.MINION should NOT be an input to the MinionInput table, " \
+                    "PipelineMode.MINION should NOT be an input to the MinionInput table, "
                     "it is only used by the pipeline minion internally"
                 )
             pipeline.run()

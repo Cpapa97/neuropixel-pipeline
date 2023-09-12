@@ -26,7 +26,9 @@ class GenericDirectory(BaseModel):
                 f"Path does not contain the expected generic component: '{self.generic}', in path: '{generic_path}'"
             )
         return Path(self.replacement).joinpath(*parts[index + 1 :])
-    
+
     # @validate_call
     def unspecify(self, specific_path: Path) -> Path:
-        raise NotImplementedError("Unspecifying a specific path is not supported yet, but is planned")
+        raise NotImplementedError(
+            "Unspecifying a specific path is not supported yet, but is planned"
+        )
