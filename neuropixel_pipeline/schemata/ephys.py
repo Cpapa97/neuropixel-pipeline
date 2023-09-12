@@ -568,7 +568,7 @@ class WaveformSet(dj.Imported):
             print("Constructing mean waveforms files")
             session_path = (EphysFile & key).fetch1("session_path")
             labview_meta = labview.LabviewNeuropixelMeta.from_h5(
-                pipeline_config().specify()
+                pipeline_config().specify(session_path)
             )
             bin_file = labview_meta.find_bin_from_prefix(session_path)
             results = WaveformMetricsRunner(
