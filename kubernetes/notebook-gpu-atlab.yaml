@@ -19,7 +19,7 @@ spec:
               - key: kubernetes.io/hostname
                 operator: In
                 values:
-                  - at-gpu7
+                  - at-gpu10
   priorityClassName: medium-priority #high-priority
   tolerations:
     - key: "gpu"
