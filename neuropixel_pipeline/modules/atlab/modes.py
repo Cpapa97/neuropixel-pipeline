@@ -76,6 +76,7 @@ class NoCuration(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.NO_CURATION] = PipelineMode.NO_CURATION
     scan_key: ScanKey
     insertion_id: int
+    insertion_data: Optional[metadata.InsertionData] = None
     base_dir: Optional[Path] = None
     acq_software: str = ACQ_SOFTWARE
     clustering_method: str = DEFAULT_CLUSTERING_METHOD
@@ -86,6 +87,7 @@ class NoCuration(BaseModel, Runnable):
     clustering_output_suffix: Optional[Path] = None
     curation_input: clustering.CurationInput = clustering.CurationInput()
     check_for_existing_kilosort_results: bool = True
+    run_insertion_meta: bool = True
 
     def run(self, **populate_kwargs):
         """Preclustering and Clustering"""
@@ -98,6 +100,15 @@ class NoCuration(BaseModel, Runnable):
             )
         if self.base_dir is not None:
             pipeline_config().set_replacement_base(self.base_dir)
+
+        ### ProbeInsertion
+        if self.run_insertion_meta:
+            InsertionMeta(
+                scan_key=self.scan_key,
+                base_dir=self.base_dir,
+                insertion_id=self.insertion_id,
+                insertion_data=self.insertion_data
+            ).run()
 
         ### PreClustering
         logging.info("starting preclustering section")
@@ -262,10 +273,11 @@ class InsertionMeta(BaseModel, Runnable):
         description="If set to False, will disable finding the probe serial number entirely",
     )
     insertion_id: int
-    insertion_location: Optional[metadata.InsertionData] = None
+    insertion_data: Optional[metadata.InsertionData] = None
 
     def run(self):
         """Insertion data"""
+        logging.info("starting probe insertion meta")
         find_probe = True
         if self.base_dir is False:
             find_probe = False
@@ -288,11 +300,12 @@ class InsertionMeta(BaseModel, Runnable):
                 skip_duplicates=True,
             )
 
-        if self.insertion_location is not None:
+        if self.insertion_data is not None:
             ephys.ProbeInsertion.Location.insert1(
-                dict(**insertion_key, **self.insertion_location.model_dict()),
+                dict(**insertion_key, **self.insertion_data.model_dict()),
                 skip_duplicates=True,
             )
+        logging.info("done with probe insertion meta")
 
 
 class PipelineInput(BaseModel, Runnable):
