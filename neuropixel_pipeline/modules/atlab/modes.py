@@ -75,6 +75,7 @@ class Minion(BaseModel, Runnable):
 class NoCuration(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.NO_CURATION] = PipelineMode.NO_CURATION
     scan_key: ScanKey
+    insertion_id: int
     base_dir: Optional[Path] = None
     acq_software: str = ACQ_SOFTWARE
     clustering_method: str = DEFAULT_CLUSTERING_METHOD
@@ -101,6 +102,7 @@ class NoCuration(BaseModel, Runnable):
         ### PreClustering
         logging.info("starting preclustering section")
         session_meta = self.scan_key.model_dump()
+        session_meta["insertion_id"] = self.insertion_id
         session_meta["rig"] = get_rig(self.scan_key.model_dump())
         ephys.Session.add_session(session_meta, error_on_duplicate=False)
 
