@@ -37,8 +37,8 @@ class ProbeInsertion(dj.Manual):
 
     definition = """
     # Probe insertion implanted into an animal for a given session.
-    animal_id : int
-    insertion_id: int
+    animal_id : int # original animal id
+    insertion_id: int # which insertion this is
     """
 
     class Probe(dj.Part):
@@ -70,7 +70,7 @@ class Session(dj.Manual):
     # Session: table connection
     inc_id: int # incremental encompassing session inc_id
     ---
-    animal_id: int # original animal id
+    -> ProbeInsertion
     session_id: int # original session id
     scan_id: smallint unsigned # original scan id
     rig='': varchar(60) # recording rig
