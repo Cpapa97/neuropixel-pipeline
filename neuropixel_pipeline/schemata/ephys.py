@@ -13,7 +13,7 @@ from .config import pipeline_config
 from ..readers import labview, kilosort
 
 
-schema = dj.schema("neuropixel_ephys_test")
+schema = dj.schema("neuropixel_ephys" + "_test")
 
 
 ### ----------------------------- Table declarations ----------------------

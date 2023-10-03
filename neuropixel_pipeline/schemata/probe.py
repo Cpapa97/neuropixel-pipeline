@@ -14,7 +14,7 @@ from neuropixel_pipeline.readers import labview
 
 from ..api.metadata import NeuropixelConfig
 
-schema = dj.schema("neuropixel_probe")
+schema = dj.schema("neuropixel_probe" + "_test")
 
 
 def run_populate():

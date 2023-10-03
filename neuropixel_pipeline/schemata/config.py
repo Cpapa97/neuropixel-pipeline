@@ -8,7 +8,7 @@ from pydantic import validate_call
 from ..config import PipelineConfig, atlab
 
 
-schema = dj.schema("neuropixel_config")
+schema = dj.schema("neuropixel_config" + "_test")
 
 
 def pipeline_config(name=None, use_global=None, override_global=False):

@@ -1,7 +1,7 @@
 from . import ephys
 import datajoint as dj
 
-schema = dj.schema("neuropixel_manual_anatomy")
+schema = dj.schema("neuropixel_manual_anatomy" + "_test")
 
 
 @schema
