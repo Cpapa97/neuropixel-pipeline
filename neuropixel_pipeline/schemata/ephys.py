@@ -144,8 +144,9 @@ class EphysRecording(dj.Imported):
         acq_software = ephys_file_data["acq_software"]
         session_path = pipeline_config().specify(ephys_file_data["session_path"])
 
+        session_meta = (Session & key).fetch1()
         inserted_probe_serial_number = (
-            ProbeInsertion.Probe * probe.Probe & key
+            ProbeInsertion.Probe * probe.Probe & session_meta
         ).fetch1("probe")
 
         if acq_software == "LabviewV1":
@@ -578,7 +579,8 @@ class CuratedClustering(dj.Imported):
             "electrode_config_hash"
         )
 
-        serial_number = dj.U("probe") & (ProbeInsertion.Probe & key)
+        session_meta = (Session & key).fetch1()
+        serial_number = dj.U("probe") & (ProbeInsertion.Probe & session_meta)
         probe_type = (probe.Probe & serial_number).fetch1("probe_type")
 
         # -- Insert unit, label, peak-chn
