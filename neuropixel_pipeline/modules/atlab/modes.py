@@ -302,7 +302,7 @@ class InsertionMeta(BaseModel, Runnable):
 
         if self.insertion_data is not None:
             ephys.ProbeInsertion.Location.insert1(
-                dict(**insertion_key, **self.insertion_data.model_dict()),
+                dict(**insertion_key, **self.insertion_data.model_dump()),
                 skip_duplicates=True,
             )
         logging.info("done with probe insertion meta")
