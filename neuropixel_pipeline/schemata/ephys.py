@@ -22,6 +22,22 @@ schema = dj.schema(SCHEMA_PREFIX + "ephys")
 
 # ------------ Pre-Clustering --------------
 
+class MouseSource(dj.Manual):
+    definition = """
+    animal_id: int
+    session: int
+    scan_idx: int
+    """
+
+class MonkeySource(dj.Manual):
+    definition = """
+    subject_id: int
+    setup: tinyint
+    session_start_time: bigint
+    ephys_start_time: bigint
+    """
+
+SessionSource = pipeline_config.setup_session_source(schema, locals())
 
 @schema
 class Session(dj.Manual):
@@ -31,9 +47,7 @@ class Session(dj.Manual):
     # Session: table connection
     session_id : int # Session primary key
     ---
-    animal_id=null: int unsigned # animal id
-    session=null: smallint unsigned # original session id
-    scan_idx=null: smallint unsigned # scan idx
+    -> SessionSource
     rig='': varchar(60) # recording rig
     timestamp=CURRENT_TIMESTAMP: timestamp # timestamp when this session was inserted
     """

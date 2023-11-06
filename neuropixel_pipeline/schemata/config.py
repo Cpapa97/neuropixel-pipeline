@@ -41,8 +41,10 @@ class PipelineConfigStore(dj.Lookup):
     config: longblob    # PipelineConfig, validated by pydantic
     """
 
+    # TODO: Probably don't need these here, the pipeline should be setup with their own config from the start
     contents = [
-        ["atlab", atlab.atlab_pipeline_config.model_dump_json()]
+        ["atlab_mouse", atlab.atlab_mouse_pipeline_config.model_dump_json()],
+        ["atlab_monkey", atlab.atlab_monkey_pipeline_config.model_dump_json()],
     ]  # need to also consider that part of probe_setup is currently manual, except for at-lab where is isn't...
 
     class Default(dj.Part):

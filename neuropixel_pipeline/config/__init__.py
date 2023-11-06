@@ -8,6 +8,7 @@ from .generic_directory import GenericDirectory
 class PipelineConfig(BaseModel):
     use_global_config: bool = False
     generic_directory_suffix: Optional[GenericDirectory] = None
+    session_source: str = "MouseSource"
 
     # @validate_call
     def set_replacement_base(self, base_dir: Path):
@@ -33,3 +34,6 @@ class PipelineConfig(BaseModel):
             return self.generic_directory_suffix.specify(path)
         else:
             return path
+
+    def setup_session_source(self, schema, context) -> 'dj.Table':
+        return schema(context[self.session_source])
