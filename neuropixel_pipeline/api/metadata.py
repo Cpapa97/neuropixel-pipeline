@@ -121,6 +121,16 @@ class NeuropixelConfig(BaseModel):
                 shank_count=4,
                 shank_spacing=250,
             ),
+            cls(
+                probe_type="bisc 2.0",
+                site_count_per_shank=256*256,
+                col_spacing=25,
+                row_spacing=25,
+                white_spacing=None,
+                col_count_per_shank=256,
+                shank_count=1,
+                shank_spacing=None,
+            ),
         ]
 
 
