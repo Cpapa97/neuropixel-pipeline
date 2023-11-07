@@ -117,7 +117,7 @@ class NoCuration(BaseModel, Runnable):
             self.scan_key, include_generic=True
         )
 
-        labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
+        labview_metadata = LabviewNeuropixelMeta.from_any(session_path)
 
         session_id = (ephys.Session & session_meta).fetch1("session_id")
         insertion_key = dict(

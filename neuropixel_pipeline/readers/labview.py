@@ -4,6 +4,9 @@ Custom labview neuropixel aquisition format reader
 
 from __future__ import annotations
 
+import os
+from enum import Enum
+
 from pathlib import Path
 from pydantic import BaseModel, Field, field_validator, constr
 from typing import List, Tuple, Any, Optional, Dict
@@ -15,6 +18,12 @@ from neuropixel_pipeline.api.lfp import LfpMetrics
 from .. import utils
 
 NEUROPIXEL_PREFIX = "NPElectrophysiology"
+
+
+class LabviewMetaType(Enum):
+    HDF5 = ".h5"
+    METAFILE = ".metafile"  # will probably replace this will something closer to the ext that'll be used
+    MISSING = "_missing"
 
 
 class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
@@ -66,6 +75,68 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
         if normalized_key_name in original_key_name:
             meta[normalized_key_name] = meta.pop(original_key_name)
 
+    @classmethod
+    def _check_for_config(cls, directory: Path, family: str = None):
+        """
+        This function prefers the metafile over the h5 family of files
+        """
+        if family is None:
+
+            def validate_h5_name(path: Path) -> bool:
+                return True
+
+        else:
+
+            def validate_h5_name(path: Path) -> bool:
+                return path.match(family.replace("%", "*"))
+
+        metafile_exists = False
+        metafile_paths = []
+        h5_exists = False
+        for path in os.listdir(directory):
+            if path.is_file():
+                ext = path.suffix
+                if ext == LabviewMetaType.METAFILE.value():
+                    metafile_exists = True
+                    metafile_paths.append(path)
+                elif ext == LabviewMetaType.HDF5.value() and validate_h5_name(path):
+                    h5_exists = True
+        if metafile_exists:
+            assert (
+                len(metafile_paths) == 1
+            ), f"There should only be one metafile config, instead found these files: {metafile_paths}"
+            metafile_path = metafile_paths[0]
+            return LabviewMetaType.METAFILE, metafile_path
+        elif h5_exists:
+            return LabviewMetaType.HDF5, None
+        else:
+            return LabviewMetaType.MISSING, None
+
+    @classmethod
+    def from_any(
+        cls,
+        directory: Path,
+        family: str = "NPElectrophysiology%d.h5",
+        load_config_data=True,
+    ) -> LabviewNeuropixelMeta:
+        """
+        Will check for the availability of config files,
+        preferring the custom metafile over the h5 family of files
+        """
+        directory = Path(directory)
+        file_type, filepath = cls._check_for_config(directory, family=family)
+        if file_type is LabviewMetaType.METAFILE:
+            cls.from_metafile(filepath=filepath, load_config_data=load_config_data)
+        elif file_type is LabviewMetaType.HDF5:
+            cls.from_h5(
+                directory=directory, family=family, load_config_data=load_config_data
+            )
+        else:
+            assert (
+                file_type is LabviewMetaType.MISSING
+            ), "Somehow got a variant other than MISSING"
+            raise ValueError("No labview config found in this directory:", directory)
+
     # eventually might want to have a function wrapper above this that selects based on
     # an existing attribute file next to the bin or still uses h5 if not (if possible).
     @classmethod
@@ -97,7 +168,9 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
         return cls.model_validate(meta)
 
     @classmethod
-    def from_metafile(cls) -> LabviewNeuropixelMeta:
+    def from_metafile(
+        cls, filepath: Path, load_config_data=True
+    ) -> LabviewNeuropixelMeta:
         """
         This will be implemented when the metadata from labview is separated from the h5
         """

@@ -176,7 +176,7 @@ class EphysRecording(dj.Imported):
         )
 
         if acq_software == "LabviewV1":
-            labview_meta = labview.LabviewNeuropixelMeta.from_h5(session_path)
+            labview_meta = labview.LabviewNeuropixelMeta.from_any(session_path)
             if not str(labview_meta.serial_number) == inserted_probe_serial_number:
                 raise FileNotFoundError(
                     "No Labview data found for probe insertion: {}".format(key)
