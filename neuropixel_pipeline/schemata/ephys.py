@@ -22,12 +22,14 @@ schema = dj.schema(SCHEMA_PREFIX + "ephys")
 
 # ------------ Pre-Clustering --------------
 
+
 class MouseSource(dj.Manual):
     definition = """
     animal_id: int
     session: int
     scan_idx: int
     """
+
 
 class MonkeySource(dj.Manual):
     definition = """
@@ -37,7 +39,9 @@ class MonkeySource(dj.Manual):
     ephys_start_time: bigint
     """
 
+
 SessionSource = pipeline_config.setup_session_source(schema, locals())
+
 
 @schema
 class Session(dj.Manual):
@@ -583,7 +587,7 @@ class WaveformSet(dj.Imported):
             session_path = pipeline_config().specify(
                 (EphysFile & key).fetch1("session_path")
             )
-            labview_meta = labview.LabviewNeuropixelMeta.from_h5(session_path)
+            labview_meta = labview.LabviewNeuropixelMeta.from_any(session_path)
             bin_file = labview_meta.find_bin_from_prefix(session_path)
             results = WaveformMetricsRunner(
                 generic_params=WaveformMetricsRunner.GenericParams(

@@ -123,7 +123,7 @@ class NeuropixelConfig(BaseModel):
             ),
             cls(
                 probe_type="bisc 2.0",
-                site_count_per_shank=256*256,
+                site_count_per_shank=256 * 256,
                 col_spacing=25,
                 row_spacing=25,
                 white_spacing=None,

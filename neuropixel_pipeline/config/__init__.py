@@ -35,5 +35,5 @@ class PipelineConfig(BaseModel):
         else:
             return path
 
-    def setup_session_source(self, schema, context) -> 'dj.Table':
+    def setup_session_source(self, schema, context) -> "dj.Table":
         return schema(context[self.session_source])
