@@ -73,8 +73,8 @@ class Session(dj.Manual):
     inc_id: int # incremental encompassing session inc_id
     ---
     -> ProbeInsertion
-    session_id: int # original session id
-    scan_id: smallint unsigned # original scan id
+    session: int # original session id
+    scan_idx: smallint unsigned # original scan id
     rig='': varchar(60) # recording rig
     timestamp=CURRENT_TIMESTAMP: timestamp # timestamp when this session was inserted
     """
