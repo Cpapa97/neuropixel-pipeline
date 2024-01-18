@@ -24,16 +24,57 @@ schema = dj.schema(SCHEMA_PREFIX + "ephys")
 
 
 @schema
+class SkullReference(dj.Lookup):
+    """Reference area from the skull"""
+
+    definition = """
+    skull_reference   : varchar(60)
+    """
+    contents = zip(["Bregma", "Lambda"])
+
+
+@schema
+class ProbeInsertion(dj.Manual):
+    """Information about probe insertion across subjects and sessions."""
+
+    definition = """
+    # Probe insertion implanted into an animal for a given session.
+    animal_id : int # original animal id
+    insertion_id: int # which insertion this is
+    """
+
+    class Probe(dj.Part):
+        definition = """
+        -> master
+        ---
+        -> probe.Probe
+        """
+
+    class Location(dj.Part):
+        definition = """
+        -> master
+        ---
+        -> SkullReference
+        ap_location: decimal(6, 2) # (um) anterior-posterior; ref is 0; more anterior is more positive
+        ml_location: decimal(6, 2) # (um) medial axis; ref is 0; more right is more positive
+        depth:       decimal(6, 2) # (um) manipulator depth relative to surface of the brain (0); more ventral is more negative
+        theta=null:  decimal(5, 2) # (deg) - elevation - rotation about the ml-axis [0, 180] - w.r.t the z+ axis
+        phi=null:    decimal(5, 2) # (deg) - azimuth - rotation about the dv-axis [0, 360] - w.r.t the x+ axis
+        beta=null:   decimal(5, 2) # (deg) rotation about the shank of the probe [-180, 180] - clockwise is increasing in degree - 0 is the probe-front facing anterior
+        """
+
+
+@schema
 class Session(dj.Manual):
     """Session key"""
 
     definition = """
     # Session: table connection
-    session_id : int # Session primary key
+    inc_id: int # incremental encompassing session inc_id
     ---
-    animal_id=null: int unsigned # animal id
-    session=null: smallint unsigned # original session id
-    scan_idx=null: smallint unsigned # scan idx
+    -> ProbeInsertion
+    session: int # original session id
+    scan_idx: smallint unsigned # original scan id
     rig='': varchar(60) # recording rig
     timestamp=CURRENT_TIMESTAMP: timestamp # timestamp when this session was inserted
     """
@@ -43,8 +84,8 @@ class Session(dj.Manual):
         if not cls & session_meta:
             # Synthesize session id, auto_increment cannot be used here if it's used later
             # Additionally this does make it more difficult to accidentally add two of the same session
-            session_id = dj.U().aggr(cls, n="ifnull(max(session_id)+1,1)").fetch1("n")
-            session_meta["session_id"] = session_id
+            inc_id = dj.U().aggr(cls, n="ifnull(max(inc_id)+1,1)").fetch1("n")
+            session_meta["inc_id"] = inc_id
             cls.insert1(
                 session_meta
             )  # should just hash as the primary key and put the rest as a longblob?
@@ -54,21 +95,11 @@ class Session(dj.Manual):
             pass
 
     @classmethod
-    def get_session_id(cls, scan_key: dict, rel=False):
+    def get_id(cls, scan_key: dict, rel=False):
         if rel:
             return (cls & scan_key).proj()
         else:
-            return (cls & scan_key).fetch1("session_id")
-
-
-@schema
-class SkullReference(dj.Lookup):
-    """Reference area from the skull"""
-
-    definition = """
-    skull_reference   : varchar(60)
-    """
-    contents = zip(["Bregma", "Lambda"])
+            return (cls & scan_key).fetch1("inc_id")
 
 
 @schema
@@ -83,54 +114,12 @@ class AcquisitionSoftware(dj.Lookup):
 
 
 @schema
-class ProbeInsertion(dj.Manual):
-    """Information about probe insertion across subjects and sessions."""
-
-    definition = """
-    # Probe insertion implanted into an animal for a given session.
-    -> Session
-    insertion_number: tinyint unsigned
-    ---
-    -> probe.Probe
-    """
-
-
-@schema
-class InsertionLocation(dj.Manual):
-    """Stereotaxic location information for each probe insertion."""
-
-    definition = """
-    # Brain Location of a given probe insertion.
-    -> ProbeInsertion
-    ---
-    -> SkullReference
-    ap_location: decimal(6, 2) # (um) anterior-posterior; ref is 0; more anterior is more positive
-    ml_location: decimal(6, 2) # (um) medial axis; ref is 0 ; more right is more positive
-    depth:       decimal(6, 2) # (um) manipulator depth relative to surface of the brain (0); more ventral is more negative
-    theta=null:  decimal(5, 2) # (deg) - elevation - rotation about the ml-axis [0, 180] - w.r.t the z+ axis
-    phi=null:    decimal(5, 2) # (deg) - azimuth - rotation about the dv-axis [0, 360] - w.r.t the x+ axis
-    beta=null:   decimal(5, 2) # (deg) rotation about the shank of the probe [-180, 180] - clockwise is increasing in degree - 0 is the probe-front facing anterior
-    """
-
-    @classmethod
-    @validate_call
-    def fill(cls, scan_key: dict, insertion_number: int, data: InsertionData):
-        cls.insert1(
-            dict(
-                session_id=Session.get_session_id(scan_key),
-                insertion_number=insertion_number,
-                **data.model_dump(),
-            )
-        )
-
-
-@schema
 class EphysFile(dj.Manual):
     """Paths for ephys sessions"""
 
     definition = """
     # Paths for ephys sessions
-    -> ProbeInsertion
+    -> Session
     ---
     session_path: varchar(255) # file path or directory for an ephys session
     -> AcquisitionSoftware
@@ -143,7 +132,7 @@ class EphysRecording(dj.Imported):
 
     definition = """
     # Ephys recording from a probe insertion for a given session.
-    -> ProbeInsertion
+    -> Session
     ---
     -> probe.ElectrodeConfig
     sampling_rate: float # (Hz)
@@ -157,9 +146,10 @@ class EphysRecording(dj.Imported):
         acq_software = ephys_file_data["acq_software"]
         session_path = pipeline_config().specify(ephys_file_data["session_path"])
 
-        inserted_probe_serial_number = (ProbeInsertion * probe.Probe & key).fetch1(
-            "probe"
-        )
+        session_meta = (Session & key).fetch1()
+        inserted_probe_serial_number = (
+            ProbeInsertion.Probe * probe.Probe & session_meta
+        ).fetch1("probe")
 
         if acq_software == "LabviewV1":
             labview_meta = labview.LabviewNeuropixelMeta.from_h5(session_path)
@@ -195,6 +185,143 @@ class EphysRecording(dj.Imported):
             )
 
 
+@schema
+class LFP(dj.Imported):
+    """Extracts local field potentials (LFP) from an electrophysiology recording."""
+
+    definition = """
+    # Acquired local field potential (LFP) from a given Ephys recording.
+    -> EphysRecording
+    ---
+    lfp_sampling_rate: float   # (Hz)
+    lfp_time_stamps: longblob  # (s) timestamps with respect to the start of the recording (recording_timestamp)
+    lfp_mean: longblob         # (uV) mean of LFP across electrodes - shape (time,)
+    """
+
+    # class Electrode(dj.Part):
+    #     """Saves local field potential data for each electrode."""
+
+    #     definition = """
+    #     -> master
+    #     -> probe.ElectrodeConfig.Electrode
+    #     ---
+    #     lfp: longblob               # (uV) recorded lfp at this electrode
+    #     """
+
+    def make(self, key):
+        """Populates the LFP tables."""
+        recording_meta = (EphysFile & key).fetch()
+        acq_software = recording_meta["acq_software"]
+
+        electrode_keys, lfp = [], []
+
+        if acq_software == "LabviewV1":
+            session_path = pipeline_config().specify(recording_meta["session_path"])
+            labview_metadata = labview.LabviewNeuropixelMeta.from_h5(session_path)
+            labview_bin = labview.LabviewBin.find_from_prefix(session_path)
+            lfp_metrics = labview_bin.extract_lfp_metrics(
+                microvolt_conversion_factor=labview_metadata.scale[1],
+                num_channels=len(labview_metadata.channels()),
+                has_sync_channel=True,
+            )
+            self.insert1(
+                **key,
+                **lfp_metrics.model_dump(),
+            )
+        elif acq_software == "SpikeGLX":
+            spikeglx_meta_filepath = get_spikeglx_meta_filepath(key)
+            spikeglx_recording = spikeglx.SpikeGLX(spikeglx_meta_filepath.parent)
+
+            lfp_channel_ind = spikeglx_recording.lfmeta.recording_channels[
+                -1 :: -self._skip_channel_counts
+            ]
+
+            # Extract LFP data at specified channels and convert to uV
+            lfp = spikeglx_recording.lf_timeseries[
+                :, lfp_channel_ind
+            ]  # (sample x channel)
+            lfp = (
+                lfp * spikeglx_recording.get_channel_bit_volts("lf")[lfp_channel_ind]
+            ).T  # (channel x sample)
+
+            self.insert1(
+                dict(
+                    key,
+                    lfp_sampling_rate=spikeglx_recording.lfmeta.meta["imSampRate"],
+                    lfp_time_stamps=(
+                        np.arange(lfp.shape[1])
+                        / spikeglx_recording.lfmeta.meta["imSampRate"]
+                    ),
+                    lfp_mean=lfp.mean(axis=0),
+                )
+            )
+
+            electrode_query = (
+                probe.ProbeType.Electrode
+                * probe.ElectrodeConfig.Electrode
+                * EphysRecording
+                & key
+            )
+            probe_electrodes = {
+                (shank, shank_col, shank_row): key
+                for key, shank, shank_col, shank_row in zip(
+                    *electrode_query.fetch("KEY", "shank", "shank_col", "shank_row")
+                )
+            }
+
+            for recorded_site in lfp_channel_ind:
+                shank, shank_col, shank_row, _ = spikeglx_recording.apmeta.shankmap[
+                    "data"
+                ][recorded_site]
+                electrode_keys.append(probe_electrodes[(shank, shank_col, shank_row)])
+        elif acq_software == "Open Ephys":
+            oe_probe = get_openephys_probe_data(key)
+
+            lfp_channel_ind = np.r_[
+                len(oe_probe.lfp_meta["channels_indices"])
+                - 1 : 0 : -self._skip_channel_counts
+            ]
+
+            # (sample x channel)
+            lfp = oe_probe.lfp_timeseries[:, lfp_channel_ind]
+            lfp = (
+                lfp * np.array(oe_probe.lfp_meta["channels_gains"])[lfp_channel_ind]
+            ).T  # (channel x sample)
+            lfp_timestamps = oe_probe.lfp_timestamps
+
+            self.insert1(
+                dict(
+                    key,
+                    lfp_sampling_rate=oe_probe.lfp_meta["sample_rate"],
+                    lfp_time_stamps=lfp_timestamps,
+                    lfp_mean=lfp.mean(axis=0),
+                )
+            )
+
+            electrode_query = (
+                probe.ProbeType.Electrode
+                * probe.ElectrodeConfig.Electrode
+                * EphysRecording
+                & key
+            )
+            probe_electrodes = {
+                key["electrode"]: key for key in electrode_query.fetch("KEY")
+            }
+
+            electrode_keys.extend(
+                probe_electrodes[channel_idx] for channel_idx in lfp_channel_ind
+            )
+        else:
+            raise NotImplementedError(
+                f"LFP extraction from acquisition software"
+                f" of type {acq_software} is not yet implemented"
+            )
+
+        # single insert in loop to mitigate potential memory issue
+        for electrode_key, lfp_trace in zip(electrode_keys, lfp):
+            self.Electrode.insert1({**key, **electrode_key, "lfp": lfp_trace})
+
+
 # ------------ Clustering --------------
 
 
@@ -223,7 +350,7 @@ class ClusteringParamSet(dj.Lookup):
 
     definition = """
     # Parameter set to be used in a clustering procedure
-    paramset_idx:  smallint
+    paramset_id:  smallint
     ---
     -> ClusteringMethod
     paramset_desc: varchar(128)
@@ -240,11 +367,11 @@ class ClusteringParamSet(dj.Lookup):
         description: str = "",
         skip_duplicates=False,
     ):
-        paramset_idx = dj.U().aggr(cls, n="ifnull(max(paramset_idx)+1,1)").fetch1("n")
+        paramset_id = dj.U().aggr(cls, n="ifnull(max(paramset_id)+1,1)").fetch1("n")
         params_uuid = utils.dict_to_uuid(params)
         cls.insert1(
             dict(
-                paramset_idx=paramset_idx,
+                paramset_id=paramset_id,
                 clustering_method=clustering_method,
                 paramset_desc=description,
                 paramset_hash=params_uuid,
@@ -287,14 +414,13 @@ class ClusteringTask(dj.Manual):
 
     @classmethod
     def build_key_from_scan(
-        cls, scan_key: dict, insertion_number: int, clustering_method: str, fetch=False
+        cls, scan_key: dict, clustering_method: str, fetch=False
     ) -> dict:
         task_key = dict(
-            session_id=(Session & scan_key).fetch1("session_id"),
-            insertion_number=insertion_number,
-            paramset_idx=(
+            inc_id=(Session & scan_key).fetch1("inc_id"),
+            paramset_id=(
                 ClusteringParamSet & {"clustering_method": clustering_method}
-            ).fetch1("paramset_idx"),
+            ).fetch1("paramset_id"),
         )
         if fetch:
             return (cls & task_key).fetch()
@@ -455,7 +581,8 @@ class CuratedClustering(dj.Imported):
             "electrode_config_hash"
         )
 
-        serial_number = dj.U("probe") & (ProbeInsertion & key)
+        session_meta = (Session & key).fetch1()
+        serial_number = dj.U("probe") & (ProbeInsertion.Probe & session_meta)
         probe_type = (probe.Probe & serial_number).fetch1("probe_type")
 
         # -- Insert unit, label, peak-chn
