@@ -89,6 +89,7 @@ class Session(dj.Manual):
             cls.insert1(
                 session_meta
             )  # should just hash as the primary key and put the rest as a longblob?
+            return inc_id
         elif error_on_duplicate:
             raise ValueError("Duplicate secondary keys")
         else:
@@ -379,6 +380,7 @@ class ClusteringParamSet(dj.Lookup):
             ),
             skip_duplicates=skip_duplicates,
         )
+        return paramset_id
 
 
 @schema

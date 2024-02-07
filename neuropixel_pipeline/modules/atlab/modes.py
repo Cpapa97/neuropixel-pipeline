@@ -51,6 +51,14 @@ class Setup(BaseModel, Runnable):
             PipelineConfigStore.set_default("atlab")
         probe.ProbeType.fill_neuropixel_probes()
         probe_setup()
+
+        # Clustering param set
+        ephys.ClusteringParamSet.fill(
+            params=default_kilosort_parameters(),
+            clustering_method="kilosort4",
+            description="default kilosort4 params",
+            skip_duplicates=True,
+        )
         ephys.ClusteringParamSet.fill(
             {},
             clustering_method="kilosort3",
@@ -149,15 +157,6 @@ class NoCuration(BaseModel, Runnable):
 
         ### Clustering
         logging.info("starting clustering section")
-        # This currently only supports the default kilosort parameters, which might be alright for atlab
-        if self.clustering_method == DEFAULT_CLUSTERING_METHOD:
-            ephys.ClusteringParamSet.fill(
-                params=default_kilosort_parameters(),
-                clustering_method="kilosort4",
-                description="default kilosort4 params",
-                skip_duplicates=True,
-            )
-
         if self.clustering_output_dir is None:
             if self.clustering_output_suffix is None:
                 self.clustering_output_dir = (
