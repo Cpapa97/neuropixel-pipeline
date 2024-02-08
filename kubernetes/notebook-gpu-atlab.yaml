@@ -76,7 +76,7 @@ spec:
         git clone --depth 1 --branch minion-pipeline https://github.com/Cpapa97/neuropixel-pipeline.git &&\
         conda run --no-capture-output -n kilosort python -m pip install -e neuropixel-pipeline/;
         cd neuropixel-pipeline/notebooks/ && conda run --no-capture-output -n kilosort \
-        jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser --NotebookApp.token=''"]
+        jupyter lab --ip=0.0.0.0 --port=9000 --allow-root --no-browser --NotebookApp.token=''"]
 
 ---
 kind: Service
@@ -89,6 +89,6 @@ spec:
     app: neuropixel-jupyter-gpu # reference the app label from the top
   ports:
   - protocol: TCP
-    port: 8888
-    targetPort: 8888
-    nodePort: 31999
+    port: 9000
+    targetPort: 9000
+    nodePort: 32000
