@@ -91,4 +91,4 @@ spec:
   - protocol: TCP
     port: 9000
     targetPort: 9000
-    nodePort: 32000
+    nodePort: 31999
