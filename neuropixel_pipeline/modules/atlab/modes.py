@@ -228,8 +228,8 @@ class NoCuration(BaseModel, Runnable):
         logging.info("done with clustering section")
 
         logging.info("starting post-clustering section")
-        ephys.WaveformSet.populate(session_restriction, **populate_kwargs)
         ephys.QualityMetrics.populate(session_restriction, **populate_kwargs)
+        ephys.WaveformSet.populate(session_restriction, **populate_kwargs)
         logging.info("done with post-clustering section")
 
 
@@ -270,6 +270,7 @@ class Curated(BaseModel, Runnable):
 
         logging.info("starting post-clustering section")
         ephys.QualityMetrics.populate(session_restriction, **populate_kwargs)
+        ephys.WaveformSet.populate(session_restriction, **populate_kwargs)
         logging.info("done with post-clustering section")
 
 
