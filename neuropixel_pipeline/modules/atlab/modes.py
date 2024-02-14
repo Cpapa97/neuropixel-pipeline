@@ -126,6 +126,8 @@ class NoCuration(BaseModel, Runnable):
                 base_dir=self.base_dir,
                 insertion_id=self.insertion_id,
                 insertion_data=self.insertion_data,
+                config_attrs=self.config_attrs,
+                overwrite_config_attrs=self.overwrite_config_attrs,
             ).run()
 
         ### PreClustering
