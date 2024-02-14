@@ -10,9 +10,9 @@ from typing import List, Tuple, Any, Optional, Dict
 import numpy as np
 
 
-from ..api import metadata, lfp
+from ...api import metadata, lfp
 from neuropixel_pipeline.api.lfp import LfpMetrics
-from .. import utils
+from ... import utils
 
 NEUROPIXEL_PREFIX = "NPElectrophysiology"
 
@@ -72,6 +72,8 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
     def from_h5(
         cls,
         directory: Path,
+        provided_attrs: Optional[dict] = None,
+        overwrite_provided: bool = True,
         family: str = "NPElectrophysiology%d.h5",
         load_config_data=True,
     ) -> LabviewNeuropixelMeta:
@@ -79,6 +81,9 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
         Uses an h5 family driver
         """
         import h5py
+
+        if provided_attrs is None:
+            provided_attrs = {}
 
         directory = Path(directory)
         with h5py.File(directory / family, driver="family", memb_size=0) as f:
@@ -93,6 +98,12 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
                 for key in f.keys():
                     if "Config" in key:
                         meta["Config"] = np.array(f[key])
+
+        if overwrite_provided:
+            provided_attrs.update(meta)
+            meta = provided_attrs
+        else:
+            meta.update(provided_attrs)
 
         return cls.model_validate(meta)
 

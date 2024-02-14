@@ -11,8 +11,9 @@ from . import probe
 from .. import utils
 from . import SCHEMA_PREFIX
 from .config import pipeline_config
-from ..api.metadata import InsertionData
-from ..readers import labview, kilosort
+from ..readers import RecordingSoftware, RecordingReader
+from ..readers import kilosort
+from ..readers.recording import labview
 
 
 schema = dj.schema(SCHEMA_PREFIX + "ephys")
@@ -126,6 +127,30 @@ class EphysFile(dj.Manual):
     -> AcquisitionSoftware
     """
 
+    class Metadata(dj.Part):
+        definition = """
+        -> master
+        ---
+        metadata: longblob # Config or metadata from the session files
+        """
+
+        @classmethod
+        def fill(cls, session_key: dict, print_errors=False, **kwargs) -> bool:
+            ephys_file = (EphysFile & session_key).fetch1()
+            kwargs["directory"] = ephys_file["session_path"]
+
+            reader = RecordingReader(software=ephys_file["acq_software"])
+            entry = reader.load(**kwargs).model_dump()
+            entry.update(session_key)
+
+            try:
+                cls.insert1(entry)
+            except dj.DataJointError as e:
+                if print_errors:
+                    print(e)
+                return False
+            return True
+
 
 @schema
 class EphysRecording(dj.Imported):
@@ -143,17 +168,22 @@ class EphysRecording(dj.Imported):
 
     def make(self, key):
         """Populates table with electrophysiology recording information."""
-        ephys_file_data = (EphysFile & key).fetch1()
-        acq_software = ephys_file_data["acq_software"]
-        session_path = pipeline_config().specify(ephys_file_data["session_path"])
+        ephys_file = (EphysFile & key).fetch1()
 
         session_meta = (Session & key).fetch1()
         inserted_probe_serial_number = (
             ProbeInsertion.Probe * probe.Probe & session_meta
         ).fetch1("probe")
 
-        if acq_software == "LabviewV1":
-            labview_meta = labview.LabviewNeuropixelMeta.from_h5(session_path)
+        # Fill EphyFile.Metadata with default arguments if it isn't already present
+        metadata_rel = EphysFile.Metadata & key
+        if len(metadata_rel) == 0:
+            EphysFile.Metadata.fill({"inc_id": ephys_file["inc_id"]})
+
+        acq_software = RecordingSoftware(ephys_file["acq_software"])
+        if acq_software is acq_software.LABVIEW:
+            metadata = metadata_rel.fetch1("metadata")
+            labview_meta = labview.LabviewNeuropixelMeta.model_validate(metadata)
             if not str(labview_meta.serial_number) == inserted_probe_serial_number:
                 raise FileNotFoundError(
                     "No Labview data found for probe insertion: {}".format(key)
@@ -217,12 +247,13 @@ class LFP(dj.Imported):
         electrode_keys, lfp = [], []
 
         if acq_software == "LabviewV1":
+            metadata = (EphysFile.Metadata & key).fetch1("metadata")
+            labview_meta = labview.LabviewNeuropixelMeta.model_validate(metadata)
             session_path = pipeline_config().specify(recording_meta["session_path"])
-            labview_metadata = labview.LabviewNeuropixelMeta.from_h5(session_path)
             labview_bin = labview.LabviewBin.find_from_prefix(session_path)
             lfp_metrics = labview_bin.extract_lfp_metrics(
-                microvolt_conversion_factor=labview_metadata.scale[1],
-                num_channels=len(labview_metadata.channels()),
+                microvolt_conversion_factor=labview_meta.scale[1],
+                num_channels=len(labview_meta.channels()),
                 has_sync_channel=True,
             )
             self.insert1(
@@ -695,10 +726,11 @@ class WaveformSet(dj.Imported):
         mean_waveform_fp = curation_output_dir / MEAN_WAVEFORMS_FILE
         if not mean_waveform_fp.exists():
             print("Constructing mean waveforms files")
+            metadata = (EphysFile.Metadata & key).fetch1("metadata")
+            labview_meta = labview.LabviewNeuropixelMeta.model_validate(metadata)
             session_path = pipeline_config().specify(
                 (EphysFile & key).fetch1("session_path")
             )
-            labview_meta = labview.LabviewNeuropixelMeta.from_h5(session_path)
             bin_file = labview_meta.find_bin_from_prefix(session_path)
             results = WaveformMetricsRunner(
                 generic_params=WaveformMetricsRunner.GenericParams(

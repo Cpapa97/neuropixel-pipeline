@@ -20,7 +20,7 @@ from .rig_search import get_rig
 from .kilosort_params import default_kilosort_parameters
 from ...api import metadata, clustering, clustering_task
 from ...api.clustering_task import ClusteringTaskMode, ClusteringTaskRunner
-from ...readers.labview import LabviewNeuropixelMeta
+from ...readers.recording.labview import LabviewNeuropixelMeta
 from ...utils import check_for_first_bin_with_prefix
 from ...schemata import probe, ephys
 from ...schemata.config import PipelineConfigStore, pipeline_config
@@ -91,6 +91,7 @@ class Minion(BaseModel, Runnable):
 class NoCuration(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.NO_CURATION] = PipelineMode.NO_CURATION
     scan_key: ScanKey
+    probe_serial_number: Optional[str] = None
     insertion_id: int
     insertion_data: Optional[metadata.InsertionData] = None
     base_dir: Optional[Path] = None
@@ -123,7 +124,7 @@ class NoCuration(BaseModel, Runnable):
                 scan_key=self.scan_key,
                 base_dir=self.base_dir,
                 insertion_id=self.insertion_id,
-                insertion_data=self.insertion_data
+                insertion_data=self.insertion_data,
             ).run()
 
         ### PreClustering
@@ -148,6 +149,26 @@ class NoCuration(BaseModel, Runnable):
             ),
             skip_duplicates=True,
         )
+        if self.probe_serial_number is not None:
+            ephys.EphysFile.Metadata.fill(
+                session_key=session_key,
+                print_errors=True,
+                provided_attrs={
+                    "serial_number": self.probe_serial_number,
+                    "config_params": [
+                        "pxi_slot_id",
+                        "port",
+                        "probe_id",
+                        "bank",
+                        "channel",
+                        "ap_gain",
+                        "lfp_gain",
+                        "disable_highpass",
+                        "ref",
+                    ],
+                },
+                overwrite_provided=True,
+            )
         session_restriction = dict(**session_key)
         ephys.EphysRecording.populate(session_restriction, **populate_kwargs)
 
@@ -186,7 +207,7 @@ class NoCuration(BaseModel, Runnable):
         )
 
         if self.clustering_task_mode is ClusteringTaskMode.TRIGGER:
-            from ...readers.labview import NEUROPIXEL_PREFIX
+            from ...readers.recording.labview import NEUROPIXEL_PREFIX
 
             clustering_params = (
                 (ephys.ClusteringParamSet & {"paramset_id": paramset_id})
@@ -277,6 +298,7 @@ class Curated(BaseModel, Runnable):
 class InsertionMeta(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.INSERTION_META] = PipelineMode.INSERTION_META
     scan_key: ScanKey
+    probe_serial_number: Optional[str] = None
     base_dir: Union[Optional[Path], Literal[False]] = Field(
         None,
         description="If set to False, will disable finding the probe serial number entirely",
@@ -303,7 +325,30 @@ class InsertionMeta(BaseModel, Runnable):
             if self.base_dir is not None:
                 pipeline_config().set_replacement_base(self.base_dir)
             session_path = get_session_path(self.scan_key)
-            labview_metadata = LabviewNeuropixelMeta.from_h5(session_path)
+
+            # This is kind of finicky because currently I'm storing the metadata under EphysFile.Metadata
+            # which is later in the pipeline than this.
+            if self.probe_serial_number is None:
+                labview_metadata = LabviewNeuropixelMeta.from_h5(directory=session_path)
+            else:
+                labview_metadata = LabviewNeuropixelMeta.from_h5(
+                    directory=session_path,
+                    provided_attrs={
+                        "serial_number": self.probe_serial_number,
+                        "config_params": [
+                            "pxi_slot_id",
+                            "port",
+                            "probe_id",
+                            "bank",
+                            "channel",
+                            "ap_gain",
+                            "lfp_gain",
+                            "disable_highpass",
+                            "ref",
+                        ],
+                    },
+                    overwrite_provided=True,
+                )
             ephys.ProbeInsertion.Probe.insert1(
                 dict(**insertion_key, probe=labview_metadata.serial_number),
                 skip_duplicates=True,

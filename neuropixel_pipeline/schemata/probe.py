@@ -10,10 +10,10 @@ from pydantic import validate_call
 import datajoint as dj
 import numpy as np
 
-from neuropixel_pipeline.readers import labview
 
 from . import SCHEMA_PREFIX
 from ..api.metadata import NeuropixelConfig
+from ..readers.recording import labview
 
 schema = dj.schema(SCHEMA_PREFIX + "probe")
 
