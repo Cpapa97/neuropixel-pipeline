@@ -119,7 +119,7 @@ class ElectrodeConfig(dj.Lookup):
             probe_type = probe_rel.fetch1("probe_type")
 
             probe_shank_rel = ProbeType.Electrode & dict(probe_type=probe_type)
-            electrode_channels = metadata.electrode_config()["channel"]
+            electrode_channels = metadata.shifted_channels()
             electrode_rel = probe_shank_rel & [
                 {"electrode": channel} for channel in electrode_channels
             ]

@@ -116,11 +116,18 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
             "This will be implemented when the labview metadata is separate from the h5"
         )
 
-    def channels(self) -> List[int]:
+    def channels(self) -> np.ndarray:
         # can use self.config_data instead, with config_params's channel and port
-        return list(int(channel_name[-4:]) for channel_name in self.channel_names)
+        # though self.config_data should be available, it isn't always
+        return np.array(list(int(channel_name[-4:]) for channel_name in self.channel_names))
+    
+    def shifted_channels(self) -> np.ndarray:
+        return self.channels - 1
 
     def electrode_config(self) -> Dict[str, Any]:
+        """
+        Fails when self.config_params and self.config_data.T don't match or are None.
+        """
         return dict(zip(self.config_params, self.config_data.T))
 
     def electrode_config_hash(self) -> str:
