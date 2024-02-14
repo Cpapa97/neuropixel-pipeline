@@ -91,11 +91,12 @@ class Minion(BaseModel, Runnable):
 class NoCuration(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.NO_CURATION] = PipelineMode.NO_CURATION
     scan_key: ScanKey
-    probe_serial_number: Optional[str] = None
     insertion_id: int
     insertion_data: Optional[metadata.InsertionData] = None
     base_dir: Optional[Path] = None
     acq_software: str = ACQ_SOFTWARE
+    config_attrs: Optional[dict] = None
+    overwrite_config_attrs: bool = True
     clustering_method: str = DEFAULT_CLUSTERING_METHOD
     clustering_task_mode: clustering_task.ClusteringTaskMode = (
         clustering_task.ClusteringTaskMode.TRIGGER
@@ -149,25 +150,12 @@ class NoCuration(BaseModel, Runnable):
             ),
             skip_duplicates=True,
         )
-        if self.probe_serial_number is not None:
+        if self.config_attrs is not None:
             ephys.EphysFile.Metadata.fill(
                 session_key=session_key,
                 print_errors=True,
-                provided_attrs={
-                    "serial_number": self.probe_serial_number,
-                    "config_params": [
-                        "pxi_slot_id",
-                        "port",
-                        "probe_id",
-                        "bank",
-                        "channel",
-                        "ap_gain",
-                        "lfp_gain",
-                        "disable_highpass",
-                        "ref",
-                    ],
-                },
-                overwrite_provided=True,
+                provided_attrs=self.config_attrs,
+                overwrite_provided=self.overwrite_config_attrs,
             )
         session_restriction = dict(**session_key)
         ephys.EphysRecording.populate(session_restriction, **populate_kwargs)
@@ -298,13 +286,15 @@ class Curated(BaseModel, Runnable):
 class InsertionMeta(BaseModel, Runnable):
     pipeline_mode: Literal[PipelineMode.INSERTION_META] = PipelineMode.INSERTION_META
     scan_key: ScanKey
-    probe_serial_number: Optional[str] = None
+    insertion_id: int
+    insertion_data: Optional[metadata.InsertionData] = None
     base_dir: Union[Optional[Path], Literal[False]] = Field(
         None,
         description="If set to False, will disable finding the probe serial number entirely",
     )
-    insertion_id: int
-    insertion_data: Optional[metadata.InsertionData] = None
+    config_attrs: Optional[dict] = None
+    overwrite_config_attrs: bool = True
+    
 
     def run(self):
         """Insertion data"""
@@ -328,26 +318,13 @@ class InsertionMeta(BaseModel, Runnable):
 
             # This is kind of finicky because currently I'm storing the metadata under EphysFile.Metadata
             # which is later in the pipeline than this.
-            if self.probe_serial_number is None:
+            if self.config_attrs is None:
                 labview_metadata = LabviewNeuropixelMeta.from_h5(directory=session_path)
             else:
                 labview_metadata = LabviewNeuropixelMeta.from_h5(
                     directory=session_path,
-                    provided_attrs={
-                        "serial_number": self.probe_serial_number,
-                        "config_params": [
-                            "pxi_slot_id",
-                            "port",
-                            "probe_id",
-                            "bank",
-                            "channel",
-                            "ap_gain",
-                            "lfp_gain",
-                            "disable_highpass",
-                            "ref",
-                        ],
-                    },
-                    overwrite_provided=True,
+                    provided_attrs=self.config_attrs,
+                    overwrite_provided=self.overwrite_config_attrs,
                 )
             ephys.ProbeInsertion.Probe.insert1(
                 dict(**insertion_key, probe=labview_metadata.serial_number),
