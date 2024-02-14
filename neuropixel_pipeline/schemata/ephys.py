@@ -140,8 +140,8 @@ class EphysFile(dj.Manual):
             kwargs["directory"] = pipeline_config().specify(ephys_file["session_path"])
 
             reader = RecordingReader(software=ephys_file["acq_software"])
-            entry = reader.load(**kwargs).model_dump()
-            entry.update(session_key)
+            entry = {**session_key}
+            entry['metadata'] = reader.load(**kwargs).model_dump()
 
             try:
                 cls.insert1(entry)
