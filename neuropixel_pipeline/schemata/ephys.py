@@ -141,7 +141,7 @@ class EphysFile(dj.Manual):
 
             reader = RecordingReader(software=ephys_file["acq_software"])
             entry = {**session_key}
-            entry['metadata'] = reader.load(**kwargs).model_dump()
+            entry['metadata'] = reader.load(**kwargs).model_dump(by_alias=True)
 
             try:
                 cls.insert1(entry)
