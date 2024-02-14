@@ -137,7 +137,7 @@ class EphysFile(dj.Manual):
         @classmethod
         def fill(cls, session_key: dict, print_errors=False, **kwargs) -> bool:
             ephys_file = (EphysFile & session_key).fetch1()
-            kwargs["directory"] = ephys_file["session_path"]
+            kwargs["directory"] = pipeline_config().specify(ephys_file["session_path"])
 
             reader = RecordingReader(software=ephys_file["acq_software"])
             entry = reader.load(**kwargs).model_dump()
