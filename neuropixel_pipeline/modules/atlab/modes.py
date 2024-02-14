@@ -296,7 +296,6 @@ class InsertionMeta(BaseModel, Runnable):
     )
     config_attrs: Optional[dict] = None
     overwrite_config_attrs: bool = True
-    
 
     def run(self):
         """Insertion data"""
