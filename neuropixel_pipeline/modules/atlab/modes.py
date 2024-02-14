@@ -154,8 +154,8 @@ class NoCuration(BaseModel, Runnable):
             ephys.EphysFile.Metadata.fill(
                 session_key=session_key,
                 print_errors=True,
-                provided_attrs=self.config_attrs,
-                overwrite_provided=self.overwrite_config_attrs,
+                config_attrs=self.config_attrs,
+                overwrite_config_attrs=self.overwrite_config_attrs,
             )
         session_restriction = dict(**session_key)
         ephys.EphysRecording.populate(session_restriction, **populate_kwargs)
@@ -323,8 +323,8 @@ class InsertionMeta(BaseModel, Runnable):
             else:
                 labview_metadata = LabviewNeuropixelMeta.from_h5(
                     directory=session_path,
-                    provided_attrs=self.config_attrs,
-                    overwrite_provided=self.overwrite_config_attrs,
+                    config_attrs=self.config_attrs,
+                    overwrite_config_attrs=self.overwrite_config_attrs,
                 )
             ephys.ProbeInsertion.Probe.insert1(
                 dict(**insertion_key, probe=labview_metadata.serial_number),

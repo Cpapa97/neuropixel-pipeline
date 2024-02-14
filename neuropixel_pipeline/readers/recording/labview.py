@@ -72,8 +72,8 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
     def from_h5(
         cls,
         directory: Path,
-        provided_attrs: Optional[dict] = None,
-        overwrite_provided: bool = True,
+        config_attrs: Optional[dict] = None,
+        overwrite_config_attrs: bool = True,
         family: str = "NPElectrophysiology%d.h5",
         load_config_data=True,
     ) -> LabviewNeuropixelMeta:
@@ -82,8 +82,8 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
         """
         import h5py
 
-        if provided_attrs is None:
-            provided_attrs = {}
+        if config_attrs is None:
+            config_attrs = {}
 
         directory = Path(directory)
         with h5py.File(directory / family, driver="family", memb_size=0) as f:
@@ -99,11 +99,11 @@ class LabviewNeuropixelMeta(BaseModel, arbitrary_types_allowed=True):
                     if "Config" in key:
                         meta["Config"] = np.array(f[key])
 
-        if overwrite_provided:
-            provided_attrs.update(meta)
-            meta = provided_attrs
+        if overwrite_config_attrs:
+            config_attrs.update(meta)
+            meta = config_attrs
         else:
-            meta.update(provided_attrs)
+            meta.update(config_attrs)
 
         return cls.model_validate(meta)
 
