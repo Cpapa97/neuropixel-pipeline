@@ -11,15 +11,15 @@ spec:
     - name: mnt
       hostPath:
         path: /mnt
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                  - at-gpu10
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: kubernetes.io/hostname
+  #               operator: In
+  #               values:
+  #                 - at-gpu10
   priorityClassName: medium-priority #high-priority
   tolerations:
     - key: "gpu"
@@ -71,9 +71,7 @@ spec:
       args: ["-c",
         "mkdir -p /src &&\
         cd /src &&\
-        git clone https://$(GITHUB_USERNAME):$(GITHUB_PASSWORD)@github.com/cajal/stimulus-pipeline.git &&\
-        conda run --no-capture-output -n kilosort python -m pip install -e stimulus-pipeline/python/; \
-        git clone --depth 1 --branch minion-pipeline https://github.com/Cpapa97/neuropixel-pipeline.git &&\
+        git clone --depth 1 --single-branch https://github.com/atlab/neuropixel-pipeline.git &&\
         conda run --no-capture-output -n kilosort python -m pip install -e neuropixel-pipeline/;
         cd neuropixel-pipeline/notebooks/ && conda run --no-capture-output -n kilosort \
         jupyter lab --ip=0.0.0.0 --port=9000 --allow-root --no-browser --NotebookApp.token=''"]
